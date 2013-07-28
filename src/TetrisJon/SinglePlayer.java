@@ -1,6 +1,5 @@
 package TetrisJon;
 
-//TEST 4 GITHUB
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -12,7 +11,7 @@ import java.awt.event.KeyEvent;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class Board extends JPanel implements ActionListener {
+public class SinglePlayer extends JPanel implements ActionListener {
 	final int BOARD_WIDTH = 10;
 	final int BOARD_HEIGHT = 22;
 	int[][] board;
@@ -30,7 +29,7 @@ public class Board extends JPanel implements ActionListener {
 	boolean pause;
 	boolean gameOver;
 
-	public Board() {
+	public SinglePlayer() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
 		delay = 400;
@@ -42,6 +41,8 @@ public class Board extends JPanel implements ActionListener {
 	}
 
 	public void start() {
+		this.setVisible(true);
+		System.out.println("Started");
 		// getSqHeight();
 		// getSqWidth();
 		squareHeight = 16;
@@ -169,7 +170,7 @@ public class Board extends JPanel implements ActionListener {
 		}
 		g.setColor(Color.black);
 		g.drawString("Score: " + score, 120, 15);
-		g.fillRect(0, 352, 200, 48);
+		g.fillRect(0, 352, (int) getSize().getWidth(), 48);
 
 		g.setColor(Color.white);
 		g.drawString("Level: " + level, 10, 370);

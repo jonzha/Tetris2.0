@@ -20,6 +20,7 @@ public class Tetri {
 	int identifier;
 	int curX;
 	int curY;
+	int player;
 
 	public Tetri(int tetri) {
 		for (int i = 0; i < 4; i++) {
