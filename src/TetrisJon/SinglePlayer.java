@@ -2,7 +2,9 @@ package TetrisJon;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -19,12 +21,13 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	Timer timer;
 	int squareHeight;
 	int squareWidth;
-	double score;
+	int score;
 	int delay;
 	int level;
 	int linesCleared;
 	int topOfPiece;// used for scoring
 	int[] topOfPieces;
+	double height, width;
 	double multiplier;
 	boolean pause;
 	boolean gameOver;
@@ -37,14 +40,11 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
 		addKeyListener(new KeyHandler());
-
 	}
 
 	public void start() {
 		this.setVisible(true);
 		System.out.println("Started");
-		// getSqHeight();
-		// getSqWidth();
 		squareHeight = 16;
 		squareWidth = 20;
 		score = 0;
@@ -61,28 +61,39 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		repaint();
 		newPiece();
 		timer.start();
-
 		// tryMove(current, 10, 40);
 	}
 
 	public void actionPerformed(ActionEvent e) {
+
 		drop();
+
 	}
 
 	public void getSqHeight() {
-		squareHeight = (int) (getSize().getHeight() / BOARD_HEIGHT);
+		System.out.println((int) (getSize().getHeight() / BOARD_HEIGHT));
+		height = getSize().getHeight();
+		squareHeight = ((int) ((height - 29) / BOARD_HEIGHT)); // -29 to account
+																// for status
+																// bar on bottom
 	}
 
 	public void getSqWidth() {
-		squareWidth = (int) (getSize().getWidth() / BOARD_WIDTH);
+		width = getSize().getWidth();
+		System.out.println((int) (getSize().getWidth() / BOARD_WIDTH));
+		squareWidth = (int) (width / BOARD_WIDTH);
 	}
 
 	public void newPiece() {
+
+		System.out.println("newpiece");
+
 		current = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
 		current.curX = BOARD_WIDTH / 2 - 1;
 		current.curY = 1;
 		if (!canMove(current, current.curX, current.curY)) {
 			gameOver = true;
+			timer.stop();
 			repaint();
 		}
 		/*
@@ -135,7 +146,8 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	public void paint(Graphics g) {
 
 		super.paint(g);
-
+		getSqWidth();
+		getSqHeight();
 		for (int i = 0; i < BOARD_HEIGHT; i++) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
 				if (board[j][i] != 0) {
@@ -168,13 +180,24 @@ public class SinglePlayer extends JPanel implements ActionListener {
 			int y = temp.curY + current.coords[i][1];
 			drawOutline(g, x * squareWidth, y * squareHeight, temp.identifier);
 		}
-		g.setColor(Color.black);
-		g.drawString("Score: " + score, 120, 15);
-		g.fillRect(0, 352, (int) getSize().getWidth(), 48);
 
+		// score
+		g.setColor(Color.black);
+		FontMetrics fm = getFontMetrics(getFont());
+		int scoreWidth = fm.stringWidth("Score: " + score);
+		g.drawString("Score: " + score, (int) (width - scoreWidth - 5), 15);
+
+		// Statusbar
+		g.fillRect(0, (int) (height - 29), (int) width, 29);
+
+		// Statusbar information
 		g.setColor(Color.white);
-		g.drawString("Level: " + level, 10, 370);
-		g.drawString("Multiplier: " + multiplier + "x", 100, 370);
+		g.drawString("Level: " + level, 10, (int) (height - 11));
+		System.out.println(width + "Width");
+		g.drawString("Multiplier: " + multiplier + "x", (int) (width - 100),
+				(int) (height - 11));
+
+		// Gameover
 		if (gameOver) {
 			gameOver(g);
 		}
@@ -308,7 +331,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		if (linesCleared != 0 && linesCleared % 10 == 0) {
 			level++;
 			multiplier += 0.5;
-			delay -= level * 20;
+			delay -= level * 10;
 			timer.setDelay(delay);
 		}
 	}
@@ -329,11 +352,24 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	public void gameOver(Graphics g) {
-		timer.stop();
+		Graphics2D g2d = (Graphics2D) g;
+		System.out.println("Game Over");
+		// timer.stop();
 		g.setColor(Color.black);
+		g.setFont(new Font(null, Font.BOLD, 15));
+		FontMetrics fm = getFontMetrics(getFont());
+		int gameOverWidth = fm.stringWidth("GAME OVER");
+		g.drawString("GAME OVER", (int) (width / 2 - gameOverWidth / 2 - 8),
+				(int) (height / 2 - 40));
+
 		g.setFont(new Font(null, Font.BOLD, 20));
-		g.drawString("GAME OVER", 40, 150);
-		g.drawString("YOUR SCORE: " + score, 25, 180);
+		FontMetrics a = getFontMetrics(getFont());
+		int scoreWidth = a.stringWidth("YOUR SCORE:");
+		g.drawString("YOUR SCORE:", (int) (width / 2 - scoreWidth / 2 - 20),
+				(int) (height / 2 - 15));
+		scoreWidth = a.stringWidth(score + "");
+		g.drawString(score + "", (int) (width / 2 - scoreWidth / 2 - 15),
+				(int) (height / 2 + 10));
 	}
 
 	public void getTopOfPieces() {

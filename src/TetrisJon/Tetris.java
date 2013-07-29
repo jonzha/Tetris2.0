@@ -1,15 +1,17 @@
 package TetrisJon;
 
-import java.awt.CardLayout;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -24,78 +26,161 @@ public class Tetris extends JFrame implements ActionListener {
 	JMenu file;
 	JMenuItem instructions, about, menu;
 	JPanel splash;
-	JPanel cards;
-	CardLayout cl;
 	JButton startSingle;
 	JButton startMulti;
+	int currentWindow;
 
 	public Tetris() {
-		cl = new CardLayout();
-		cards = new JPanel(cl);
+
 		Splash();
-
-		add(cards);
-		setSize(200, 425);
-
 		setTitle("Tetris");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		menuBar = new JMenuBar();
-		Action action = new aboutAction();
-		Action instructionAction = new instructionAction();
-		file = new JMenu("File");
-		menuBar.add(file);
-		about = new JMenuItem(action);
-		about.setText("About");
-		menu = new JMenuItem("Menu");
-		menu.addActionListener(this);
-		instructions = new JMenuItem(instructionAction);
-		instructions.setText("Instructions");
-		file.add(instructions);
-		file.add(about);
-		file.add(menu);
-
-		this.setJMenuBar(menuBar);
+		addMenuBar();
 	}
 
 	public void Splash() {
 		splash = new JPanel();
-		splash.setLayout(new BoxLayout(splash, BoxLayout.LINE_AXIS));
+		splash.setLayout(new BoxLayout(splash, BoxLayout.PAGE_AXIS));
+		splash.add(Box.createRigidArea(new Dimension(30, 0)));
+		// splash.add(Box.createVerticalGlue());
+
+		ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+		JLabel picLabel = new JLabel(ii);
+		picLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		splash.add(picLabel);
 
 		startSingle = new JButton("Single Player");
 		startMulti = new JButton("Multiplayer");
+		startMulti.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		startSingle.setAlignmentX(Component.CENTER_ALIGNMENT);
 		startSingle.addActionListener(this);
 		startMulti.addActionListener(this);
-		splash.add(startSingle, 0);
-		splash.add(startMulti, 1);
-		cards.add(splash, "Menu");
+		splash.add(startSingle);
+		splash.add(startMulti);
+		add(splash, BorderLayout.CENTER);
+		currentWindow = 0;
+		setSize(200, 200);
+		splash.setVisible(true);
+
+	}
+
+	public void addMenuBar() {
+		menuBar = new JMenuBar();
+		file = new JMenu("File");
+		menuBar.add(file);
+		about = new JMenuItem("About");
+		about.addActionListener(this);
+
+		menu = new JMenuItem("Menu");
+		menu.addActionListener(this);
+
+		instructions = new JMenuItem("Instructions");
+		instructions.addActionListener(this);
+
+		file.add(about);
+		this.setJMenuBar(menuBar);
 
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == startSingle) {
-			cl.next(cards);
 			SinglePlayer();
 			s1.requestFocus();
-		}
-		if (e.getSource() == startMulti) {
-			cl.next(cards);
+			currentWindow = 1;
+			file.add(menu);
+			file.add(instructions);
+		} else if (e.getSource() == startMulti) {
 			Multiplayer2();
 			m2.requestFocus();
-		}
-		if (e.getSource() == menu) {
-			System.out.println("menu");
+			currentWindow = 2;
+			file.add(menu);
+			file.add(instructions);
+		} else if (e.getSource() == menu) {
+			if (currentWindow == 1) {
+				s1.pause();
+			} else {
+				m2.pause();
+			}
+			ImageIcon ii = new ImageIcon(this.getClass().getResource(
+					"sadface.png"));
+
+			int result = JOptionPane
+					.showConfirmDialog(null,
+							"Are you sure you want to return to the menu?",
+							"Menu", JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE, ii);
 			splash.setVisible(true);
-			s1.setVisible(false);
-			cl.next(cards);
+			if (result == JOptionPane.NO_OPTION) {
+				if (currentWindow == 1) {
+					s1.pause();
+				} else {
+					m2.pause();
+				}
+				return;
+			}
+			if (currentWindow == 1) {
+				remove(s1);
+			} else if (currentWindow == 2) {
+				remove(m2);
+			}
+			file.remove(menu);
+			file.remove(instructions);
+			setSize(200, 200);
+			currentWindow = 0;
+			repaint();
+		} else if (e.getSource() == instructions) {
+			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+			if (currentWindow == 1) {
+				s1.pause();
+
+				JOptionPane
+						.showMessageDialog(
+								null,
+								" p- pause \n r- restart\n up- rotate \n down- speed drop \n space- hard drop",
+								"Instructions", 1, ii);
+				s1.pause();
+
+			} else if (currentWindow == 2) {
+				m2.pause();
+				JOptionPane
+						.showMessageDialog(
+								null,
+								" p- pause \n r- restart\n\n Player 1 \n up- rotate \n down- speed drop \n space- hard drop \n \n Player 2 \n w- rotate \n s- speed drop \n f- hard drop",
+								"Instructions", 1, ii);
+				m2.pause();
+
+			}
+
+		} else if (e.getSource() == about) {
+			if (currentWindow != 0) {
+				if (currentWindow == 1) {
+					s1.pause();
+				} else {
+					m2.pause();
+				}
+			}
+			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+
+			JOptionPane.showMessageDialog(null, "Version 1.0 \n JON ZHANG",
+					"About", 1, ii);
+			if (currentWindow != 0) {
+				if (currentWindow == 1) {
+					s1.pause();
+				} else {
+					m2.pause();
+				}
+			}
 		}
 
 	}
 
 	public void SinglePlayer() {
 		s1 = new SinglePlayer();
-		cards.add(s1, "SinglePlayer");
-		// setSize(400, 425);
-
+		add(s1);
+		setSize(200, 425);
+		s1.setVisible(true);
+		splash.setVisible(false);
 		s1.start();
 	}
 
@@ -108,7 +193,7 @@ public class Tetris extends JFrame implements ActionListener {
 
 	public void Multiplayer2() {
 		m2 = new Multiplayer2();
-		cards.add(m2, "Multiplayer");
+		add(m2);
 		setSize(400, 425);
 		m2.start();
 	}
@@ -117,26 +202,5 @@ public class Tetris extends JFrame implements ActionListener {
 		Tetris game = new Tetris();
 		game.setLocationRelativeTo(null);
 		game.setVisible(true);
-	}
-
-	class aboutAction extends AbstractAction {
-
-		public void actionPerformed(ActionEvent e) {
-			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
-			JOptionPane.showMessageDialog(null, "Version 1.0 /n JON ZHANG",
-					"About", 1, ii);
-		}
-	}
-
-	class instructionAction extends AbstractAction {
-		public void actionPerformed(ActionEvent e) {
-			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
-			JOptionPane
-					.showMessageDialog(
-							null,
-							" p- pause \n r- restart\n up- rotate \n down- speed drop \n space- hard drop",
-							"Instructions", 1, ii);
-
-		}
 	}
 }

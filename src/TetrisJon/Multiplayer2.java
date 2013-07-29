@@ -5,13 +5,14 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.BitSet;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class Multiplayer2 extends JPanel implements ActionListener {
+public class Multiplayer2 extends JPanel implements ActionListener, KeyListener {
 	final int BOARD_WIDTH = 20;
 	final int BOARD_HEIGHT = 22;
 	int[][] board;
@@ -31,6 +32,8 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 	double multiplier;
 	boolean pause;
 	boolean gameOver;
+	boolean realLanding;// used so that the pieces won't stack in midair
+	BitSet keys = new BitSet(256);
 
 	public Multiplayer2() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -41,7 +44,7 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 		timer = new Timer(delay, this);
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
-		addKeyListener(new KeyHandler());
+		addKeyListener(this);
 
 	}
 
@@ -108,61 +111,95 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 
 	public boolean canMove(Tetri tetri, int x, int y) {
 		int newY, newX;
+		// Holds positions of the invisible boundaries
+		clearInvisi(tetri);
+
+		for (int i = 0; i < 4; i++) {
+			newY = y + tetri.coords[i][1];
+			newX = tetri.coords[i][0] + x;
+			if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT
+					|| newY < 0) {
+				realLanding = true;
+				return false;
+			}
+			if (board[newX][newY] != 0) {
+				realLanding = true;
+				return false;
+			}
+
+			if (tetri.player == 1) {
+				if (airBoard2[newX][newY] != 0) {
+					System.out.println("POWEIJFPAOEWFJAPOWEF");
+					realLanding = false;
+					return false;
+				}
+			} else if (tetri.player == 2) {
+				if (airBoard1[newX][newY] != 0) {
+					System.out.println("hi");
+					realLanding = false;
+					return false;
+				}
+			}
+
+		}
+
+		// Adding the invisible boundaries
 		if (tetri.player == 1) {
 			for (int i = 0; i < 4; i++) {
 				airBoard1[tetri.curX + tetri.coords[i][0]][tetri.curY
 						+ tetri.coords[i][1]] = tetri.identifier;
 			}
 		} else if (tetri.player == 2) {
-
 			for (int i = 0; i < 4; i++) {
 				airBoard2[tetri.curX + tetri.coords[i][0]][tetri.curY
 						+ tetri.coords[i][1]] = tetri.identifier;
 			}
 
 		}
-		for (int i = 0; i < 4; i++) {
-			newY = y + tetri.coords[i][1];
-			newX = tetri.coords[i][0] + x;
-			if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT
-					|| newY < 0) {
-				return false;
-			}
-			if (board[newX][newY] != 0) {
-				return false;
-			}
-			/*
-			 * if (tetri.player == 1) { if (airBoard2[newX][newY] != 0) {
-			 * System.out.println("POWEIJFPAOEWFJAPOWEF"); return false; } }
-			 * else if (tetri.player == 2) { if (airBoard1[newX][newY] != 0) {
-			 * System.out.println("hi");
-			 * 
-			 * return false; } }
-			 */
 
-		}
-
-		if (tetri.player == 2) {
-			for (int i = 0; i < 4; i++) {
-				airBoard1[tetri.curX + tetri.coords[i][0]][tetri.curY
-						+ tetri.coords[i][1]] = 0;
-			}
-		} else if (tetri.player == 1) {
-
-			for (int i = 0; i < 4; i++) {
-				airBoard2[tetri.curX + tetri.coords[i][0]][tetri.curY
-						+ tetri.coords[i][1]] = 0;
-			}
-
-		}
 		tetri.curX = x;
 		tetri.curY = y;
 		repaint();
 		return true;
 	}
 
+	public void clearInvisi(Tetri tetri) {
+		if (tetri.player == 2) {
+
+			for (int i = 0; i < BOARD_WIDTH; i++) {
+				for (int j = 0; j < BOARD_HEIGHT; j++) {
+					airBoard2[i][j] = 0;
+				}
+			}
+		} else if (tetri.player == 1) {
+			for (int i = 0; i < BOARD_WIDTH; i++) {
+				for (int j = 0; j < BOARD_HEIGHT; j++) {
+					airBoard1[i][j] = 0;
+				}
+			}
+		}
+
+	}
+
+	public void removeInvisiPiece(Tetri tetri) {
+		if (tetri.player == 2) {
+			for (int i = 0; i < 4; i++) {
+				airBoard2[tetri.curX + tetri.coords[i][0]][tetri.curY
+						+ tetri.coords[i][1]] = 0;
+			}
+		} else if (tetri.player == 1) {
+
+			for (int i = 0; i < 4; i++) {
+				airBoard1[tetri.curX + tetri.coords[i][0]][tetri.curY
+						+ tetri.coords[i][1]] = 0;
+			}
+
+		}
+	}
+
 	public void drop(Tetri tetri) {
-		if (!canMove(tetri, tetri.curX, tetri.curY + 1)) {
+		if (!canMove(tetri, tetri.curX, tetri.curY + 1) && realLanding) {
+			clearInvisi(tetri);
 			pieceDropped(tetri);
 		}
 
@@ -333,9 +370,9 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
 				if (board[j][i] == 0) {
 					remove = false;
-					break;
 				}
 			}
+
 			if (remove) {
 				for (int j = 0; j < BOARD_WIDTH; j++) {
 					board[j][i] = 0;
@@ -387,6 +424,7 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 	}
 
 	public void restart() {
+		pause = false;
 		fillWithEmpty();
 		start();
 	}
@@ -409,61 +447,80 @@ public class Multiplayer2 extends JPanel implements ActionListener {
 		}
 	}
 
-	class KeyHandler extends KeyAdapter {
-		public void keyPressed(KeyEvent e) {
-			int key = e.getKeyCode();
-			if (key == KeyEvent.VK_R) {
-				restart();
-				return;
-			}
-			if (gameOver) {
-				return;
-			}
-			if (key == KeyEvent.VK_P) {
-				pause();
-			}
-			if (pause) {
-				return;
-			}
-			switch (key) {
-			case KeyEvent.VK_LEFT:
-				canMove(current, current.curX - 1, current.curY);
-				break;
-			case KeyEvent.VK_A:
-				canMove(current2, current2.curX - 1, current2.curY);
-				break;
-			case KeyEvent.VK_RIGHT:
-				canMove(current, current.curX + 1, current.curY);
-				break;
-			case KeyEvent.VK_D:
-				canMove(current2, current2.curX + 1, current2.curY);
-				break;
-			case KeyEvent.VK_DOWN:
-				drop(current);
-				score += 5 * multiplier;
-				break;
-			case KeyEvent.VK_S:
-				drop(current2);
-				score += 5 * multiplier;
-				break;
-			case KeyEvent.VK_SPACE:
-				int startY = current.curY;
-				leSuperDrop(current);
-				score += (topOfPiece - startY) * 10 * multiplier;
-				break;
-			case KeyEvent.VK_F:
-				int startY2 = current2.curY;
-				leSuperDrop(current2);
-				score += (topOfPiece - startY2) * 10 * multiplier;
-				break;
-			case KeyEvent.VK_UP:
-				rotate(current);
-				break;
-			case KeyEvent.VK_W:
-				rotate(current2);
-				break;
-			}
+	@Override
+	public void keyPressed(KeyEvent e) {
+		int keyCode = e.getKeyCode();
+		keys.set(keyCode);
+		keyAction();
+	}
 
+	@Override
+	public void keyReleased(final KeyEvent event) {
+		int keyCode = event.getKeyCode();
+		keys.clear(keyCode);
+	}
+
+	@Override
+	public void keyTyped(KeyEvent arg0) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public boolean isKeyPressed(final int keyCode) {
+		return keys.get(keyCode);
+	}
+
+	public void keyAction() {
+		if (isKeyPressed(KeyEvent.VK_R)) {
+			restart();
+			return;
+		}
+		if (gameOver) {
+			return;
+		}
+		if (isKeyPressed(KeyEvent.VK_P)) {
+			pause();
+		}
+		if (pause) {
+			return;
+		}
+
+		if (isKeyPressed(KeyEvent.VK_LEFT)) {
+			canMove(current, current.curX - 1, current.curY);
+		}
+		if (isKeyPressed(KeyEvent.VK_A)) {
+			canMove(current2, current2.curX - 1, current2.curY);
+		}
+		if (isKeyPressed(KeyEvent.VK_RIGHT)) {
+			canMove(current, current.curX + 1, current.curY);
+		}
+		if (isKeyPressed(KeyEvent.VK_D)) {
+			canMove(current2, current2.curX + 1, current2.curY);
+		}
+		if (isKeyPressed(KeyEvent.VK_DOWN)) {
+			drop(current);
+			score += 5 * multiplier;
+		}
+		if (isKeyPressed(KeyEvent.VK_S)) {
+			drop(current2);
+			score += 5 * multiplier;
+		}
+		if (isKeyPressed(KeyEvent.VK_SPACE)) {
+			int startY = current.curY;
+			leSuperDrop(current);
+			score += (topOfPiece - startY) * 10 * multiplier;
+		}
+		if (isKeyPressed(KeyEvent.VK_F)) {
+			int startY2 = current2.curY;
+			leSuperDrop(current2);
+			score += (topOfPiece - startY2) * 10 * multiplier;
+		}
+		if (isKeyPressed(KeyEvent.VK_UP)) {
+			rotate(current);
+		}
+		if (isKeyPressed(KeyEvent.VK_W)) {
+			rotate(current2);
 		}
 	}
+
 }

@@ -7,11 +7,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.swing.JPanel;
+import javax.swing.Timer;
 
 public class Multiplayer extends JPanel implements ActionListener {
 	final int BOARD_WIDTH = 20;
@@ -21,9 +19,7 @@ public class Multiplayer extends JPanel implements ActionListener {
 	int[][] airBoard2;
 	Tetri current;
 	Tetri current2;
-	// Timer timer;
-	Thread thread1;
-	Thread thread2;
+	Timer timer;
 	int squareHeight;
 	int squareWidth;
 	double score;
@@ -35,7 +31,6 @@ public class Multiplayer extends JPanel implements ActionListener {
 	double multiplier;
 	boolean pause;
 	boolean gameOver;
-	private volatile boolean running = true;
 
 	public Multiplayer() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -43,18 +38,16 @@ public class Multiplayer extends JPanel implements ActionListener {
 		airBoard2 = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
 		delay = 400;
-		// timer = new Timer(delay, this);
-		thread1 = new Thread(player1);
-		thread2 = new Thread(player2);
+		timer = new Timer(delay, this);
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
-		addKeyListener(new MultiKeyPressListener());
-		thread1.start();
-		thread2.start();
+		addKeyListener(new KeyHandler());
 
 	}
 
 	public void start() {
+		this.setVisible(true);
+
 		// getSqHeight();
 		// getSqWidth();
 		squareHeight = 16;
@@ -71,8 +64,9 @@ public class Multiplayer extends JPanel implements ActionListener {
 		 */
 		fillWithEmpty();
 		repaint();
-		running = true;
-		// timer.start();
+		newPiece1();
+		newPiece2();
+		timer.start();
 
 		// tryMove(current, 10, 40);
 	}
@@ -81,39 +75,6 @@ public class Multiplayer extends JPanel implements ActionListener {
 		drop(current);
 		drop(current2);
 	}
-
-	Runnable player1 = new Runnable() {
-		public void run() {
-			newPiece1();
-
-			while (running) {
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				drop(current);
-			}
-		}
-	};
-
-	Runnable player2 = new Runnable() {
-
-		public void run() {
-			newPiece2();
-
-			while (running) {
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				drop(current2);
-			}
-		}
-	};
 
 	public void getSqHeight() {
 		squareHeight = (int) (getSize().getHeight() / BOARD_HEIGHT);
@@ -170,7 +131,6 @@ public class Multiplayer extends JPanel implements ActionListener {
 			if (board[newX][newY] != 0) {
 				return false;
 			}
-
 			/*
 			 * if (tetri.player == 1) { if (airBoard2[newX][newY] != 0) {
 			 * System.out.println("POWEIJFPAOEWFJAPOWEF"); return false; } }
@@ -179,6 +139,7 @@ public class Multiplayer extends JPanel implements ActionListener {
 			 * 
 			 * return false; } }
 			 */
+
 		}
 
 		if (tetri.player == 2) {
@@ -411,32 +372,27 @@ public class Multiplayer extends JPanel implements ActionListener {
 			level++;
 			multiplier += 0.5;
 			delay -= level * 20;
-			// timer.setDelay(delay);
+			timer.setDelay(delay);
 		}
 	}
 
 	public void pause() {
 		if (!pause) {
-			running = false;
+			timer.stop();
 			pause = true;
 		} else {
-			running = true;
-			thread1 = new Thread(player1);
-			thread1.start();
-			thread2 = new Thread(player2);
-			thread2.start();
+			timer.start();
 			pause = false;
 		}
 	}
 
 	public void restart() {
-		running = false;
 		fillWithEmpty();
 		start();
 	}
 
 	public void gameOver(Graphics g) {
-		// timer.stop();
+		timer.stop();
 		g.setColor(Color.black);
 		g.setFont(new Font(null, Font.BOLD, 20));
 		g.drawString("GAME OVER", 40, 150);
@@ -454,12 +410,6 @@ public class Multiplayer extends JPanel implements ActionListener {
 	}
 
 	class KeyHandler extends KeyAdapter {
-		int keyRelease;
-
-		public void keyReleased(KeyEvent e) {
-			keyRelease = e.getKeyCode();
-		}
-
 		public void keyPressed(KeyEvent e) {
 			int key = e.getKeyCode();
 			if (key == KeyEvent.VK_R) {
@@ -516,69 +466,4 @@ public class Multiplayer extends JPanel implements ActionListener {
 
 		}
 	}
-
-	class MultiKeyPressListener implements KeyListener {
-
-		// Set of currently pressed keys
-		private final Set<Character> pressed = new HashSet<Character>();
-
-		@Override
-		public synchronized void keyPressed(KeyEvent e) {
-			pressed.add(e.getKeyChar());
-			// if (pressed.size() > 1) {
-			// for (char key : pressed) {
-			char key = e.getKeyChar();
-			switch (key) {
-			case KeyEvent.VK_LEFT:
-				canMove(current, current.curX - 1, current.curY);
-				break;
-			case KeyEvent.VK_A:
-				canMove(current2, current2.curX - 1, current2.curY);
-				break;
-			case KeyEvent.VK_RIGHT:
-				canMove(current, current.curX + 1, current.curY);
-				break;
-			case KeyEvent.VK_D:
-				canMove(current2, current2.curX + 1, current2.curY);
-				break;
-			case KeyEvent.VK_DOWN:
-				drop(current);
-				score += 5 * multiplier;
-				break;
-			case KeyEvent.VK_S:
-				drop(current2);
-				score += 5 * multiplier;
-				break;
-			case KeyEvent.VK_SPACE:
-				int startY = current.curY;
-				leSuperDrop(current);
-				score += (topOfPiece - startY) * 10 * multiplier;
-				break;
-			case KeyEvent.VK_F:
-				int startY2 = current2.curY;
-				leSuperDrop(current2);
-				score += (topOfPiece - startY2) * 10 * multiplier;
-				break;
-			case KeyEvent.VK_UP:
-				rotate(current);
-				break;
-			case KeyEvent.VK_W:
-				rotate(current2);
-				break;
-			}
-			// }
-		}
-
-		// }
-
-		@Override
-		public synchronized void keyReleased(KeyEvent e) {
-			pressed.remove(e.getKeyChar());
-		}
-
-		@Override
-		public void keyTyped(KeyEvent e) {/* Not used */
-		}
-	}
-
 }
