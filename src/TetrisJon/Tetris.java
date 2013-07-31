@@ -3,11 +3,13 @@ package TetrisJon;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -17,22 +19,32 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 
 public class Tetris extends JFrame implements ActionListener {
 	SinglePlayer s1;
 	Multiplayer m1;
 	Multiplayer2 m2;
-	JMenuBar menuBar;
-	JMenu file;
-	JMenuItem instructions, about, menu;
+
 	JPanel splash;
 	JButton startSingle;
 	JButton startMulti;
 	int currentWindow;
+	JPanel container;
+	final int MENU_WIDTH = 300;
+	final int MENU_HEIGHT = 200;
+	int gameWidth = 200;
+	int gameHeight = 425;
+	JMenuBar menuBar;
+	JMenu file;
+	JMenuItem instructions, about, menu, statistics;
 
 	public Tetris() {
-
+		container = new JPanel();
+		container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 		Splash();
+		windowSize();
+		add(container);
 		setTitle("Tetris");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		addMenuBar();
@@ -58,17 +70,20 @@ public class Tetris extends JFrame implements ActionListener {
 		startMulti.addActionListener(this);
 		splash.add(startSingle);
 		splash.add(startMulti);
-		add(splash, BorderLayout.CENTER);
+		container.add(splash, BorderLayout.CENTER);
 		currentWindow = 0;
-		setSize(200, 200);
+		setSize(MENU_WIDTH, MENU_HEIGHT);
 		splash.setVisible(true);
 
 	}
 
 	public void addMenuBar() {
+
 		menuBar = new JMenuBar();
+
 		file = new JMenu("File");
 		menuBar.add(file);
+
 		about = new JMenuItem("About");
 		about.addActionListener(this);
 
@@ -78,99 +93,208 @@ public class Tetris extends JFrame implements ActionListener {
 		instructions = new JMenuItem("Instructions");
 		instructions.addActionListener(this);
 
+		statistics = new JMenuItem("Statistics");
+		statistics.addActionListener(this);
+
 		file.add(about);
 		this.setJMenuBar(menuBar);
+
+	}
+
+	public void windowSize() {
+		JRadioButton small = new JRadioButton("Small", true);
+		JRadioButton medium = new JRadioButton("Medium");
+		JRadioButton large = new JRadioButton("Large");
+
+		small.setActionCommand("small");
+		medium.setActionCommand("medium");
+		large.setActionCommand("large");
+
+		small.addActionListener(this);
+		medium.addActionListener(this);
+		large.addActionListener(this);
+
+		ButtonGroup group = new ButtonGroup();
+		group.add(small);
+		group.add(medium);
+		group.add(large);
+
+		JPanel sizePanel = new JPanel(new GridLayout(1, 3));
+		sizePanel.add(small);
+		sizePanel.add(medium);
+		sizePanel.add(large);
+
+		container.add(sizePanel);
+	}
+
+	public void setSmall() {
+		gameWidth = 200;
+		gameHeight = 425;
+	}
+
+	public void setMed() {
+		gameWidth = 290;
+		gameHeight = 579;
+	}
+
+	public void setLarge() {
+		gameWidth = 400;
+		gameHeight = 711;
+	}
+
+	public void statistics() {
+
+		if (currentWindow != 0) {
+			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+
+			if (currentWindow == 1) {
+				s1.pause();
+				JOptionPane.showMessageDialog(null, "Statistics: \n Z-Shape: "
+						+ s1.statistics[1] + "\n S-Shape: " + s1.statistics[2]
+						+ "\n Line-Shape: " + s1.statistics[3] + "\n T-Shape: "
+						+ s1.statistics[4] + "\n Square-Shape: "
+						+ s1.statistics[5] + "\n L-Shape: " + s1.statistics[6]
+						+ "\n MirrorL-Shape: " + s1.statistics[7],
+						"Statistics", 1, ii);
+			} else {
+				m2.pause();
+				JOptionPane.showMessageDialog(null,
+						"Statistics Player 1: \n Z-Shape: " + m2.statistics1[1]
+								+ "\n S-Shape: " + m2.statistics1[2]
+								+ "\n Line-Shape: " + m2.statistics1[3]
+								+ "\n T-Shape: " + m2.statistics1[4]
+								+ "\n Square-Shape: " + m2.statistics1[5]
+								+ "\n L-Shape: " + m2.statistics1[6]
+								+ "\n MirrorL-Shape: " + m2.statistics1[7]
+
+								+ "\n\nStatistics Player 2: \n Z-Shape: "
+								+ m2.statistics2[1] + "\n S-Shape: "
+								+ m2.statistics2[2] + "\n Line-Shape: "
+								+ m2.statistics2[3] + "\n T-Shape: "
+								+ m2.statistics2[4] + "\n Square-Shape: "
+								+ m2.statistics2[5] + "\n L-Shape: "
+								+ m2.statistics2[6] + "\n MirrorL-Shape: "
+								+ m2.statistics2[7], "Statistics", 1, ii);
+			}
+		}
+
+		if (currentWindow != 0) {
+			if (currentWindow == 1) {
+				s1.pause();
+			} else {
+				m2.pause();
+			}
+		}
+
+	}
+
+	public void menu() {
+
+		if (currentWindow == 1) {
+			s1.pause();
+		} else {
+			m2.pause();
+		}
+		ImageIcon ii = new ImageIcon(this.getClass().getResource("sadface.png"));
+
+		int result = JOptionPane.showConfirmDialog(null,
+				"Are you sure you want to return to the menu?", "Menu",
+				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, ii);
+		container.setVisible(true);
+		if (result == JOptionPane.NO_OPTION) {
+			if (currentWindow == 1) {
+				s1.pause();
+			} else {
+				m2.pause();
+			}
+			return;
+		}
+		if (currentWindow == 1) {
+			remove(s1);
+		} else if (currentWindow == 2) {
+			remove(m2);
+		}
+		file.remove(menu);
+		file.remove(instructions);
+		file.remove(statistics);
+		setSize(MENU_WIDTH, MENU_HEIGHT);
+		currentWindow = 0;
+		repaint();
+
+	}
+
+	public void instructions() {
+
+		ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+		if (currentWindow == 1) {
+			s1.pause();
+
+			JOptionPane
+					.showMessageDialog(
+							null,
+							" p- pause \n r- restart\n up- rotate \n down- speed drop \n space- hard drop",
+							"Instructions", 1, ii);
+			s1.pause();
+
+		} else if (currentWindow == 2) {
+			m2.pause();
+			JOptionPane
+					.showMessageDialog(
+							null,
+							" p- pause \n r- restart\n\n Player 1 \n up- rotate \n down- speed drop \n space- hard drop \n \n Player 2 \n w- rotate \n s- speed drop \n f- hard drop",
+							"Instructions", 1, ii);
+			m2.pause();
+
+		}
+
+	}
+
+	public void about() {
+
+		if (currentWindow != 0) {
+			if (currentWindow == 1) {
+				s1.pause();
+			} else {
+				m2.pause();
+			}
+		}
+		ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
+
+		JOptionPane.showMessageDialog(null, "Version 1.0 \n JON ZHANG",
+				"About", 1, ii);
+		if (currentWindow != 0) {
+			if (currentWindow == 1) {
+				s1.pause();
+			} else {
+				m2.pause();
+			}
+		}
 
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == startSingle) {
 			SinglePlayer();
-			s1.requestFocus();
-			currentWindow = 1;
-			file.add(menu);
-			file.add(instructions);
+
 		} else if (e.getSource() == startMulti) {
 			Multiplayer2();
-			m2.requestFocus();
-			currentWindow = 2;
-			file.add(menu);
-			file.add(instructions);
 		} else if (e.getSource() == menu) {
-			if (currentWindow == 1) {
-				s1.pause();
-			} else {
-				m2.pause();
-			}
-			ImageIcon ii = new ImageIcon(this.getClass().getResource(
-					"sadface.png"));
-
-			int result = JOptionPane
-					.showConfirmDialog(null,
-							"Are you sure you want to return to the menu?",
-							"Menu", JOptionPane.YES_NO_OPTION,
-							JOptionPane.QUESTION_MESSAGE, ii);
-			splash.setVisible(true);
-			if (result == JOptionPane.NO_OPTION) {
-				if (currentWindow == 1) {
-					s1.pause();
-				} else {
-					m2.pause();
-				}
-				return;
-			}
-			if (currentWindow == 1) {
-				remove(s1);
-			} else if (currentWindow == 2) {
-				remove(m2);
-			}
-			file.remove(menu);
-			file.remove(instructions);
-			setSize(200, 200);
-			currentWindow = 0;
-			repaint();
+			menu();
 		} else if (e.getSource() == instructions) {
-			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
-			if (currentWindow == 1) {
-				s1.pause();
-
-				JOptionPane
-						.showMessageDialog(
-								null,
-								" p- pause \n r- restart\n up- rotate \n down- speed drop \n space- hard drop",
-								"Instructions", 1, ii);
-				s1.pause();
-
-			} else if (currentWindow == 2) {
-				m2.pause();
-				JOptionPane
-						.showMessageDialog(
-								null,
-								" p- pause \n r- restart\n\n Player 1 \n up- rotate \n down- speed drop \n space- hard drop \n \n Player 2 \n w- rotate \n s- speed drop \n f- hard drop",
-								"Instructions", 1, ii);
-				m2.pause();
-
-			}
-
+			instructions();
 		} else if (e.getSource() == about) {
-			if (currentWindow != 0) {
-				if (currentWindow == 1) {
-					s1.pause();
-				} else {
-					m2.pause();
-				}
-			}
-			ImageIcon ii = new ImageIcon(this.getClass().getResource("JZ.jpg"));
-
-			JOptionPane.showMessageDialog(null, "Version 1.0 \n JON ZHANG",
-					"About", 1, ii);
-			if (currentWindow != 0) {
-				if (currentWindow == 1) {
-					s1.pause();
-				} else {
-					m2.pause();
-				}
-			}
+			about();
+		} else if (e.getActionCommand() == "small") {
+			setSmall();
+			System.out.println("apwoeifj");
+		} else if (e.getActionCommand() == "medium") {
+			setMed();
+			System.out.println("apwoeifj");
+		} else if (e.getActionCommand() == "large") {
+			setLarge();
+			System.out.println("apwoeifj");
+		} else if (e.getSource() == statistics) {
+			statistics();
 		}
 
 	}
@@ -178,10 +302,15 @@ public class Tetris extends JFrame implements ActionListener {
 	public void SinglePlayer() {
 		s1 = new SinglePlayer();
 		add(s1);
-		setSize(200, 425);
-		s1.setVisible(true);
-		splash.setVisible(false);
+		setSize(gameWidth, gameHeight);
+		setLocationRelativeTo(null);
+		container.setVisible(false);
 		s1.start();
+		s1.requestFocus();
+		currentWindow = 1;
+		file.add(menu);
+		file.add(instructions);
+		file.add(statistics);
 	}
 
 	public void Multiplayer() {
@@ -194,8 +323,16 @@ public class Tetris extends JFrame implements ActionListener {
 	public void Multiplayer2() {
 		m2 = new Multiplayer2();
 		add(m2);
-		setSize(400, 425);
+		setSize(gameWidth * 2, gameHeight);
+		setLocationRelativeTo(null);
+		container.setVisible(false);
 		m2.start();
+		m2.requestFocus();
+		currentWindow = 2;
+		file.add(menu);
+		file.add(instructions);
+		file.add(statistics);
+
 	}
 
 	public static void main(String[] args) {

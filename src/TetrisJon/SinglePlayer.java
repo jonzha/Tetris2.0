@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -31,6 +30,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	double multiplier;
 	boolean pause;
 	boolean gameOver;
+	int[] statistics;
 
 	public SinglePlayer() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -43,6 +43,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	public void start() {
+
 		this.setVisible(true);
 		System.out.println("Started");
 		squareHeight = 16;
@@ -54,6 +55,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		linesCleared = 0;
 		multiplier = 1;
 		topOfPiece = 0;
+		statistics = new int[8];
 		/*
 		 * for (int i = 0; i < topOfPieces.length; i++) { topOfPieces[i] = 0; }
 		 */
@@ -89,6 +91,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		System.out.println("newpiece");
 
 		current = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
+		statistics[current.identifier]++;
 		current.curX = BOARD_WIDTH / 2 - 1;
 		current.curY = 1;
 		if (!canMove(current, current.curX, current.curY)) {
@@ -157,6 +160,31 @@ public class SinglePlayer extends JPanel implements ActionListener {
 			}
 		}
 
+		drawPiece(g);
+
+		// score
+		g.setColor(Color.black);
+		FontMetrics fm = getFontMetrics(getFont());
+		int scoreWidth = fm.stringWidth("Score: " + score);
+		g.drawString("Score: " + score, (int) (width - scoreWidth - 5), 15);
+
+		// Statusbar
+		g.fillRect(0, (int) (height - 29), (int) width, 29);
+
+		// Statusbar information
+		g.setColor(Color.white);
+		g.drawString("Level: " + level, 10, (int) (height - 11));
+		System.out.println(height + "height");
+		g.drawString("Multiplier: " + multiplier + "x", (int) (width - 100),
+				(int) (height - 11));
+
+		// Gameover
+		if (gameOver) {
+			gameOver(g);
+		}
+	}
+
+	private void drawPiece(Graphics g) {
 		for (int i = 3; i >= 0; i--) {
 			int x = current.curX + current.coords[i][0];
 			int y = current.curY + current.coords[i][1];
@@ -179,27 +207,6 @@ public class SinglePlayer extends JPanel implements ActionListener {
 			int x = temp.curX + current.coords[i][0];
 			int y = temp.curY + current.coords[i][1];
 			drawOutline(g, x * squareWidth, y * squareHeight, temp.identifier);
-		}
-
-		// score
-		g.setColor(Color.black);
-		FontMetrics fm = getFontMetrics(getFont());
-		int scoreWidth = fm.stringWidth("Score: " + score);
-		g.drawString("Score: " + score, (int) (width - scoreWidth - 5), 15);
-
-		// Statusbar
-		g.fillRect(0, (int) (height - 29), (int) width, 29);
-
-		// Statusbar information
-		g.setColor(Color.white);
-		g.drawString("Level: " + level, 10, (int) (height - 11));
-		System.out.println(width + "Width");
-		g.drawString("Multiplier: " + multiplier + "x", (int) (width - 100),
-				(int) (height - 11));
-
-		// Gameover
-		if (gameOver) {
-			gameOver(g);
 		}
 	}
 
@@ -352,7 +359,6 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	public void gameOver(Graphics g) {
-		Graphics2D g2d = (Graphics2D) g;
 		System.out.println("Game Over");
 		// timer.stop();
 		g.setColor(Color.black);

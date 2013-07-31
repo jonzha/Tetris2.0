@@ -2,6 +2,7 @@ package TetrisJon;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +24,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	Timer timer;
 	int squareHeight;
 	int squareWidth;
-	double score;
+	int score;
 	int delay;
 	int level;
 	int linesCleared;
@@ -34,6 +35,8 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	boolean gameOver;
 	boolean realLanding;// used so that the pieces won't stack in midair
 	BitSet keys = new BitSet(256);
+	double height, width;
+	int[] statistics1, statistics2;
 
 	public Multiplayer2() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -62,6 +65,8 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		linesCleared = 0;
 		multiplier = 1;
 		topOfPiece = 0;
+		statistics1 = new int[8];
+		statistics2 = new int[8];
 		/*
 		 * for (int i = 0; i < topOfPieces.length; i++) { topOfPieces[i] = 0; }
 		 */
@@ -80,20 +85,28 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	}
 
 	public void getSqHeight() {
-		squareHeight = (int) (getSize().getHeight() / BOARD_HEIGHT);
+		// System.out.println((int) (getSize().getHeight() / BOARD_HEIGHT));
+		height = getSize().getHeight();
+		squareHeight = ((int) ((height - 29) / BOARD_HEIGHT)); // -29 to account
+																// for status
+																// bar on bottom
 	}
 
 	public void getSqWidth() {
-		squareWidth = (int) (getSize().getWidth() / BOARD_WIDTH);
+		width = getSize().getWidth();
+		System.out.println((int) (getSize().getWidth() / BOARD_WIDTH));
+		squareWidth = (int) (width / BOARD_WIDTH);
 	}
 
 	public void newPiece1() {
 		current = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
 		current.player = 1;
+		statistics1[current.identifier]++;
 		current.curX = BOARD_WIDTH / 2 - 1 + 3;
 		current.curY = 1;
 		if (!canMove(current, current.curX, current.curY)) {
 			gameOver = true;
+			timer.stop();
 			repaint();
 		}
 	}
@@ -101,10 +114,12 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	public void newPiece2() {
 		current2 = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
 		current2.player = 2;
+		statistics2[current2.identifier]++;
 		current2.curX = BOARD_WIDTH / 2 - 1 - 3;
 		current2.curY = 1;
 		if (!canMove(current2, current2.curX, current2.curY)) {
 			gameOver = true;
+			timer.stop();
 			repaint();
 		}
 	}
@@ -227,7 +242,8 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	public void paint(Graphics g) {
 
 		super.paint(g);
-
+		getSqWidth();
+		getSqHeight();
 		for (int i = 0; i < BOARD_HEIGHT; i++) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
 				if (board[j][i] != 0) {
@@ -239,13 +255,22 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		drawPiece(g, current);
 		drawPiece(g, current2);
 
+		// score
 		g.setColor(Color.black);
-		g.drawString("Score: " + score, 120, 15);
-		g.fillRect(0, 352, (int) getSize().getWidth(), 48);
+		FontMetrics fm = getFontMetrics(getFont());
+		int scoreWidth = fm.stringWidth("Score: " + score);
+		g.drawString("Score: " + score, (int) (width - scoreWidth - 5), 15);
 
+		// Statusbar
+		g.fillRect(0, (int) (height - 29), (int) width, 29);
+
+		// Statusbar information
 		g.setColor(Color.white);
-		g.drawString("Level: " + level, 10, 370);
-		g.drawString("Multiplier: " + multiplier + "x", 100, 370);
+		g.drawString("Level: " + level, 10, (int) (height - 11));
+		System.out.println(height + "height");
+		g.drawString("Multiplier: " + multiplier + "x", (int) (width - 100),
+				(int) (height - 11));
+
 		if (gameOver) {
 			gameOver(g);
 		}
@@ -408,7 +433,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		if (linesCleared != 0 && linesCleared % 10 == 0) {
 			level++;
 			multiplier += 0.5;
-			delay -= level * 20;
+			delay -= level * 10;
 			timer.setDelay(delay);
 		}
 	}
@@ -430,11 +455,23 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	}
 
 	public void gameOver(Graphics g) {
-		timer.stop();
+		System.out.println("Game Over");
+		// timer.stop();
 		g.setColor(Color.black);
+		g.setFont(new Font(null, Font.BOLD, 15));
+		FontMetrics fm = getFontMetrics(getFont());
+		int gameOverWidth = fm.stringWidth("GAME OVER");
+		g.drawString("GAME OVER", (int) (width / 2 - gameOverWidth / 2 - 8),
+				(int) (height / 2 - 40));
+
 		g.setFont(new Font(null, Font.BOLD, 20));
-		g.drawString("GAME OVER", 40, 150);
-		g.drawString("YOUR SCORE: " + score, 25, 180);
+		FontMetrics a = getFontMetrics(getFont());
+		int scoreWidth = a.stringWidth("YOUR SCORE:");
+		g.drawString("YOUR SCORE:", (int) (width / 2 - scoreWidth / 2 - 20),
+				(int) (height / 2 - 15));
+		scoreWidth = a.stringWidth(score + "");
+		g.drawString(score + "", (int) (width / 2 - scoreWidth / 2 - 15),
+				(int) (height / 2 + 10));
 	}
 
 	public void getTopOfPieces() {
