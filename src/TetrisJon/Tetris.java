@@ -6,12 +6,15 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -32,18 +35,22 @@ public class Tetris extends JFrame implements ActionListener {
 	int currentWindow;
 	JPanel container;
 	final int MENU_WIDTH = 300;
-	final int MENU_HEIGHT = 200;
+	final int MENU_HEIGHT = 250;
 	int gameWidth = 200;
 	int gameHeight = 425;
 	JMenuBar menuBar;
 	JMenu file;
 	JMenuItem instructions, about, menu, statistics;
+	JCheckBox musicButton, soundButton;
+	boolean music = true;
+	boolean sound = true;
 
 	public Tetris() {
 		container = new JPanel();
 		container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 		Splash();
 		windowSize();
+		musicSoundBox();
 		add(container);
 		setTitle("Tetris");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -210,8 +217,14 @@ public class Tetris extends JFrame implements ActionListener {
 			return;
 		}
 		if (currentWindow == 1) {
+			if (music) {
+				s1.backgroundMusic.stop();
+			}
 			remove(s1);
 		} else if (currentWindow == 2) {
+			if (music) {
+				m2.backgroundMusic.stop();
+			}
 			remove(m2);
 		}
 		file.remove(menu);
@@ -272,6 +285,48 @@ public class Tetris extends JFrame implements ActionListener {
 
 	}
 
+	public void musicSoundBox() {
+		musicButton = new JCheckBox("Music");
+		musicButton.setSelected(true);
+
+		soundButton = new JCheckBox("Sound");
+		soundButton.setSelected(true);
+
+		JPanel musicPanel = new JPanel();
+		musicPanel.setLayout(new BoxLayout(musicPanel, BoxLayout.PAGE_AXIS));
+
+		musicPanel.add(musicButton);
+		musicPanel.add(soundButton);
+		musicButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+		soundButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		musicButton.addItemListener(itemListener);
+		soundButton.addItemListener(itemListener);
+		container.add(musicPanel);
+
+	}
+
+	ItemListener itemListener = new ItemListener() {
+		public void itemStateChanged(ItemEvent e) {
+			Object source = e.getItemSelectable();
+			if (source == musicButton) {
+				if (e.getStateChange() == ItemEvent.DESELECTED) {
+					music = false;
+					System.out.println("Music disabled!");
+				} else {
+					music = true;
+				}
+			} else if (source == soundButton) {
+				if (e.getStateChange() == ItemEvent.DESELECTED) {
+					sound = false;
+					System.out.println("Sound disabled!");
+				} else {
+					sound = true;
+				}
+			}
+		}
+	};
+
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == startSingle) {
 			SinglePlayer();
@@ -305,6 +360,8 @@ public class Tetris extends JFrame implements ActionListener {
 		setSize(gameWidth, gameHeight);
 		setLocationRelativeTo(null);
 		container.setVisible(false);
+		s1.music = music;
+		s1.sound = sound;
 		s1.start();
 		s1.requestFocus();
 		currentWindow = 1;
@@ -326,6 +383,8 @@ public class Tetris extends JFrame implements ActionListener {
 		setSize(gameWidth * 2, gameHeight);
 		setLocationRelativeTo(null);
 		container.setVisible(false);
+		m2.music = music;
+		m2.sound = sound;
 		m2.start();
 		m2.requestFocus();
 		currentWindow = 2;

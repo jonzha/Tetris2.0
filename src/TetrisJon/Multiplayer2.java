@@ -8,8 +8,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.BitSet;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -37,6 +44,8 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	BitSet keys = new BitSet(256);
 	double height, width;
 	int[] statistics1, statistics2;
+	Clip backgroundMusic = null;
+	boolean sound, music;
 
 	public Multiplayer2() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -74,6 +83,9 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		repaint();
 		newPiece1();
 		newPiece2();
+		if (music) {
+			playBackgroundMusic("BackgroundMusic.wav");
+		}
 		timer.start();
 
 		// tryMove(current, 10, 40);
@@ -106,6 +118,9 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		current.curY = 1;
 		if (!canMove(current, current.curX, current.curY)) {
 			gameOver = true;
+			if (music) {
+				backgroundMusic.stop();
+			}
 			timer.stop();
 			repaint();
 		}
@@ -118,6 +133,9 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		current2.curX = BOARD_WIDTH / 2 - 1 - 3;
 		current2.curY = 1;
 		if (!canMove(current2, current2.curX, current2.curY)) {
+			if (music) {
+				backgroundMusic.stop();
+			}
 			gameOver = true;
 			timer.stop();
 			repaint();
@@ -221,8 +239,10 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	}
 
 	public void pieceDropped(Tetri tetri) {
-		// WHY MUST YOU ADD CURRENT
-		// Because Coords never change!
+		if (sound) {
+			playSound("Pop.wav");
+		} // WHY MUST YOU ADD CURRENT
+			// Because Coords never change!
 		for (int i = 0; i < 4; i++) {
 			// System.out.println("x is " + (current.curX +
 			// current.coords[i][0]) +
@@ -450,6 +470,9 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 
 	public void restart() {
 		pause = false;
+		if (music) {
+			backgroundMusic.stop();
+		}
 		fillWithEmpty();
 		start();
 	}
@@ -482,6 +505,70 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 				}
 			}
 		}
+	}
+
+	public void playSound(String soundName) {
+		Clip clip = null;
+		AudioInputStream audioInputStream = null;
+		try {
+			audioInputStream = AudioSystem.getAudioInputStream(new File(
+					soundName).getAbsoluteFile());
+		} catch (UnsupportedAudioFileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			clip = AudioSystem.getClip();
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			clip.open(audioInputStream);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		clip.start();
+
+	}
+
+	public void playBackgroundMusic(String soundName) {
+
+		AudioInputStream audioInputStream = null;
+		try {
+			audioInputStream = AudioSystem.getAudioInputStream(new File(
+					soundName).getAbsoluteFile());
+		} catch (UnsupportedAudioFileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			backgroundMusic = AudioSystem.getClip();
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			backgroundMusic.open(audioInputStream);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
+
 	}
 
 	@Override

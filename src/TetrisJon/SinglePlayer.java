@@ -8,7 +8,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -31,6 +38,8 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	boolean pause;
 	boolean gameOver;
 	int[] statistics;
+	Clip backgroundMusic = null;
+	boolean music, sound;
 
 	public SinglePlayer() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
@@ -62,6 +71,9 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		fillWithEmpty();
 		repaint();
 		newPiece();
+		if (music) {
+			playBackgroundMusic("BackgroundMusic.wav");
+		}
 		timer.start();
 		// tryMove(current, 10, 40);
 	}
@@ -96,6 +108,9 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		current.curY = 1;
 		if (!canMove(current, current.curX, current.curY)) {
 			gameOver = true;
+			if (music) {
+				backgroundMusic.stop();
+			}
 			timer.stop();
 			repaint();
 		}
@@ -132,6 +147,9 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	public void pieceDropped() {
+		if (sound) {
+			playSound("Pop.wav");
+		}
 		// WHY MUST YOU ADD CURRENT
 		// Because Coords never change!
 		for (int i = 0; i < 4; i++) {
@@ -354,6 +372,10 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	public void restart() {
+		pause = false;
+		if (music) {
+			backgroundMusic.stop();
+		}
 		fillWithEmpty();
 		start();
 	}
@@ -386,6 +408,70 @@ public class SinglePlayer extends JPanel implements ActionListener {
 				}
 			}
 		}
+	}
+
+	public void playSound(String soundName) {
+		Clip clip = null;
+		AudioInputStream audioInputStream = null;
+		try {
+			audioInputStream = AudioSystem.getAudioInputStream(new File(
+					soundName).getAbsoluteFile());
+		} catch (UnsupportedAudioFileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			clip = AudioSystem.getClip();
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			clip.open(audioInputStream);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		clip.start();
+
+	}
+
+	public void playBackgroundMusic(String soundName) {
+
+		AudioInputStream audioInputStream = null;
+		try {
+			audioInputStream = AudioSystem.getAudioInputStream(new File(
+					soundName).getAbsoluteFile());
+		} catch (UnsupportedAudioFileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			backgroundMusic = AudioSystem.getClip();
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			backgroundMusic.open(audioInputStream);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
+
 	}
 
 	class KeyHandler extends KeyAdapter {
