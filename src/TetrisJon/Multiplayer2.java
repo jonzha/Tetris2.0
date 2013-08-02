@@ -423,6 +423,8 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 					board[j][i] = 0;
 
 				}
+				if (sound)
+					playSound("Boom.wav");
 				numRemoved++;
 				linesCleared++;
 				newLevel();

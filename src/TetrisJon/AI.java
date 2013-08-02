@@ -19,7 +19,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class SinglePlayer extends JPanel implements ActionListener {
+public class AI extends JPanel implements ActionListener, Runnable {
 	final int BOARD_WIDTH = 10;
 	final int BOARD_HEIGHT = 22;
 	int[][] board;
@@ -41,7 +41,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	Clip backgroundMusic = null;
 	boolean music, sound;
 
-	public SinglePlayer() {
+	public AI() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
 		delay = 400;
@@ -65,9 +65,9 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		multiplier = 1;
 		topOfPiece = 0;
 		statistics = new int[8];
-		/*
-		 * for (int i = 0; i < topOfPieces.length; i++) { topOfPieces[i] = 0; }
-		 */
+		// Thread runner = new Thread(this, "AI Thread");
+		// runner.start(); // (2) Start the thread.
+
 		fillWithEmpty();
 		repaint();
 		newPiece();
@@ -78,14 +78,178 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		// tryMove(current, 10, 40);
 	}
 
-	public void actionPerformed(ActionEvent e) {
+	public void run() {
+		intelligence();
+	}
 
-		drop();
+	public void intelligence() {
+		Tetri temp = new Tetri(current.identifier);
+		temp.curX = current.curX;
+		temp.curY = current.curY;
+		BestSpot[] spots = new BestSpot[4];
+		int bestValue = -10;
+		int bestPosition = 0;
+		int rotateAmt = 0;
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 2; j++) {
+				temp.coords[i][j] = current.coords[i][j];
+			}
+		}
+		// System.out.println(dropNow(temp));
+		for (int i = 0; i < 4; i++) {
+			spots[i] = analyzePiece(temp);
+			int tempValue = spots[i].value;
+			if (tempValue > bestValue) {
+				bestValue = tempValue;
+				bestPosition = spots[i].position;
+				rotateAmt = i;
+			}
+			rotate(temp);
+		}
+
+		for (int i = 0; i < rotateAmt; i++) {
+			rotate(current);
+		}
+
+		if (canMove(current, bestPosition, current.curY)) {
+			leSuperDrop();
+		}
+	}
+
+	public BestSpot analyzePiece(Tetri temp) {
+		int value = -4;
+		int goodMoveSpot = 0;
+		int orgX = temp.curX;
+		int orgY = temp.curY;
+		int yPos = 0;
+		ValueandY moves[] = new ValueandY[temp.totalMoves];
+
+		// Analyzes all moves
+		for (int i = 0; i < moves.length; i++) {
+			temp.curX = (temp.curX - temp.leftMoves + i);
+
+			if (canMove(temp, temp.curX, temp.curY)) {
+				moves[i] = dropNow(temp);
+			} else {
+				// Not a possible move
+				moves[i] = new ValueandY(-100, 0);
+			}
+			temp.curY = orgY;
+			temp.curX = orgX;
+		}
+		for (int i = 0; i < moves.length; i++) {
+			System.out.print(moves[i].value + " ");
+			if (moves[i].value > value) {
+				value = moves[i].value;
+				goodMoveSpot = i;
+				yPos = moves[i].yPos;
+
+				// If they are equal, decide based on which piece will land
+				// lower
+			} else if (moves[i].value == value) {
+				if (moves[i].yPos > yPos) {
+					value = moves[i].value;
+					goodMoveSpot = i;
+					yPos = moves[i].yPos;
+				}
+			}
+		}
+		System.out.println();
+
+		// leSuperDrop();
+		return new BestSpot(current.curX - current.leftMoves + goodMoveSpot,
+				value);
+	}
+
+	public ValueandY dropNow(Tetri temp) {
+		int tempBoard[][] = new int[BOARD_WIDTH][BOARD_HEIGHT];
+		for (int i = 0; i < BOARD_HEIGHT; i++) {
+			for (int j = 0; j < BOARD_WIDTH; j++) {
+				tempBoard[j][i] = board[j][i];
+			}
+		}
+
+		while (canMove(temp, temp.curX, temp.curY + 1)) {
+			;
+		}
+		for (int i = 0; i < 4; i++) {
+			tempBoard[temp.curX + temp.coords[i][0]][temp.curY
+					+ temp.coords[i][1]] = temp.identifier;
+		}
+		// All that stuff up there sets up the thing for the actual code
+
+		// If the piece will clear a line
+		if (remove(tempBoard)) {
+			return new ValueandY(1, temp.curY);
+		}
+		int badDrop = badDrop(tempBoard, temp);
+		if (badDrop == 0) {
+			return new ValueandY(0, temp.curY);
+		} else {
+			return new ValueandY(-badDrop, temp.curY);
+		}
 
 	}
 
+	// Returns number of pieces where underneath is a blank
+	public int badDrop(int[][] tempBoard, Tetri temp) {
+		int count = 0;
+		for (int i = 0; i < 4; i++) {
+			if (temp.curY + temp.coords[i][1] == BOARD_HEIGHT - 1) {
+				continue;
+			}
+			if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
+					+ temp.coords[i][1] + 1] == 0) {
+				count++;
+				// Analyze for if there are more than one blanks below
+				for (int j = 1; temp.curY + temp.coords[i][1] + 1 + j < BOARD_HEIGHT; j++) {
+					if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
+							+ temp.coords[i][1] + 1 + j] == 0) {
+						count++;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public boolean remove(int[][] tempBoard) {
+
+		for (int i = BOARD_HEIGHT - 1; i >= 0; i--) {
+			boolean remove = true;
+
+			// Check if they are all are filled
+			for (int j = 0; j < BOARD_WIDTH; j++) {
+				if (tempBoard[j][i] == 0) {
+					remove = false;
+					break;
+				}
+			}
+			if (remove) {
+				for (int j = 0; j < BOARD_WIDTH; j++) {
+					tempBoard[j][i] = 0;
+
+				}
+				i++; // Needed so that the function can recheck the current line
+						// which in reality is the next line up. Needed for
+						// multiple line clears at the same time
+				return true;
+
+			}
+			// repaint();
+		}
+		return false;
+	}
+
+	public void actionPerformed(ActionEvent e) {
+
+		// drop();
+		// intelligence();
+	}
+
 	public void getSqHeight() {
-		System.out.println((int) (getSize().getHeight() / BOARD_HEIGHT));
 		height = getSize().getHeight();
 		squareHeight = ((int) ((height - 29) / BOARD_HEIGHT)); // -29 to account
 																// for status
@@ -94,13 +258,10 @@ public class SinglePlayer extends JPanel implements ActionListener {
 
 	public void getSqWidth() {
 		width = getSize().getWidth();
-		System.out.println((int) (getSize().getWidth() / BOARD_WIDTH));
 		squareWidth = (int) (width / BOARD_WIDTH);
 	}
 
 	public void newPiece() {
-
-		System.out.println("newpiece");
 
 		current = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
 		statistics[current.identifier]++;
@@ -136,6 +297,7 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		shape.curX = x;
 		shape.curY = y;
 		repaint();
+		// System.out.println("Current x is " + current.curX);
 		return true;
 	}
 
@@ -192,7 +354,6 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		// Statusbar information
 		g.setColor(Color.white);
 		g.drawString("Level: " + level, 10, (int) (height - 11));
-		System.out.println(height + "height");
 		g.drawString("Multiplier: " + multiplier + "x", (int) (width - 100),
 				(int) (height - 11));
 
@@ -287,13 +448,13 @@ public class SinglePlayer extends JPanel implements ActionListener {
 		pieceDropped();
 	}
 
-	public void rotate() {
-		if (current.identifier == 5)
+	public void rotate(Tetri tetri) {
+		if (tetri.identifier == 5)
 			return;
-		Tetri temp = new Tetri(current.identifier);
+		Tetri temp = new Tetri(tetri.identifier);
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 2; j++) {
-				temp.coords[i][j] = current.coords[i][j];
+				temp.coords[i][j] = tetri.coords[i][j];
 			}
 		}
 		for (int i = 0; i < 4; i++) {
@@ -302,9 +463,10 @@ public class SinglePlayer extends JPanel implements ActionListener {
 			temp.coords[i][0] = y;
 			temp.coords[i][1] = -x;
 		}
-		if (canMove(temp, current.curX, current.curY)) {
-			current.coords = temp.coords;
+		if (canMove(temp, tetri.curX, tetri.curY)) {
+			tetri.coords = temp.coords;
 		}
+		repaint();
 
 	}
 
@@ -509,10 +671,32 @@ public class SinglePlayer extends JPanel implements ActionListener {
 				score += (topOfPiece - startY) * 10 * multiplier;
 				break;
 			case KeyEvent.VK_UP:
-				rotate();
+				rotate(current);
+				break;
+			case KeyEvent.VK_I:
+				intelligence();
 				break;
 			}
 
+		}
+	}
+
+	public class BestSpot {
+		int position, value;
+
+		BestSpot(int position, int value) {
+			this.position = position;
+			this.value = value;
+		}
+	}
+
+	// Used so that l can return both the value and y position
+	public class ValueandY {
+		int yPos, value;
+
+		ValueandY(int yPos, int value) {
+			this.yPos = yPos;
+			this.value = value;
 		}
 	}
 }

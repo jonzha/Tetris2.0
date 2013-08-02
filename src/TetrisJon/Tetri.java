@@ -13,14 +13,11 @@ public class Tetri {
 			{ { 1, -1 }, { 0, -1 }, { 0, 0 }, { 0, 1 } } };
 	int[][] coords = new int[4][2];
 	int[][] test = { { -1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 } };
-	int x;
-	int y;
-	int dx;
-	int dy;
 	int identifier;
 	int curX;
 	int curY;
 	int player;
+	int leftMoves, rightMoves, totalMoves;
 
 	public Tetri(int tetri) {
 		for (int i = 0; i < 4; i++) {
@@ -30,22 +27,29 @@ public class Tetri {
 		}
 		// coords = test;
 		identifier = tetri;
-	}
-
-	public void setdX(int dx) {
-		this.dx = dx;
-	}
-
-	public void setdY(int dy) {
-		this.dy = dy;
-	}
-
-	public void setX(int x) {
-		this.x = x;
-	}
-
-	public void setY(int y) {
-		this.y = y;
+		if (identifier == 1) {
+			leftMoves = 3;
+			rightMoves = 5;
+		} else if (identifier == 2) {
+			leftMoves = 4;
+			rightMoves = 4;
+		} else if (identifier == 3) {
+			leftMoves = 4;
+			rightMoves = 5;
+		} else if (identifier == 4) {
+			leftMoves = 3;
+			rightMoves = 4;
+		} else if (identifier == 5) {
+			leftMoves = 4;
+			rightMoves = 4;
+		} else if (identifier == 6) {
+			leftMoves = 3;
+			rightMoves = 5;
+		} else if (identifier == 7) {
+			leftMoves = 4;
+			rightMoves = 4;
+		}
+		totalMoves = leftMoves + rightMoves;
 	}
 
 }
