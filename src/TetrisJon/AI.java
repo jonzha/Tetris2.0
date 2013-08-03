@@ -10,6 +10,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -44,7 +45,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	public AI() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
-		delay = 400;
+		delay = 3;
 		timer = new Timer(delay, this);
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
@@ -58,7 +59,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		squareHeight = 16;
 		squareWidth = 20;
 		score = 0;
-		delay = 400;
+		delay = 3;
 		level = 1;
 		gameOver = false;
 		linesCleared = 0;
@@ -90,6 +91,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		int bestValue = -10;
 		int bestPosition = 0;
 		int rotateAmt = 0;
+		int yPos = 0;
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 2; j++) {
 				temp.coords[i][j] = current.coords[i][j];
@@ -98,13 +100,22 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		// System.out.println(dropNow(temp));
 		for (int i = 0; i < 4; i++) {
 			spots[i] = analyzePiece(temp);
-			int tempValue = spots[i].value;
-			if (tempValue > bestValue) {
-				bestValue = tempValue;
-				bestPosition = spots[i].position;
+			if (spots[i].value > bestValue) {
+				bestValue = spots[i].value;
+				bestPosition = spots[i].xPos;
 				rotateAmt = i;
 			}
+			// Checks if they're equal to pick the lower one
+			else if (spots[i].value == bestValue) {
+				if (spots[i].yPos > yPos) {
+					bestValue = spots[i].value;
+					bestPosition = spots[i].xPos;
+					rotateAmt = i;
+					yPos = spots[i].yPos;
+				}
+			}
 			rotate(temp);
+			// System.out.println();
 		}
 
 		for (int i = 0; i < rotateAmt; i++) {
@@ -118,50 +129,50 @@ public class AI extends JPanel implements ActionListener, Runnable {
 
 	public BestSpot analyzePiece(Tetri temp) {
 		int value = -4;
-		int goodMoveSpot = 0;
 		int orgX = temp.curX;
 		int orgY = temp.curY;
 		int yPos = 0;
-		ValueandY moves[] = new ValueandY[temp.totalMoves];
+		int xPos = 0;
+		ArrayList<ValueInfo> moves = new ArrayList<ValueInfo>();
 
-		// Analyzes all moves
-		for (int i = 0; i < moves.length; i++) {
-			temp.curX = (temp.curX - temp.leftMoves + i);
-
-			if (canMove(temp, temp.curX, temp.curY)) {
-				moves[i] = dropNow(temp);
-			} else {
-				// Not a possible move
-				moves[i] = new ValueandY(-100, 0);
-			}
-			temp.curY = orgY;
+		// Go all the way to the left
+		for (int i = 0; canMove(temp, temp.curX - i, temp.curY); i++) {
+			moves.add(dropNow(temp));
 			temp.curX = orgX;
+			temp.curY = orgY;
 		}
-		for (int i = 0; i < moves.length; i++) {
-			System.out.print(moves[i].value + " ");
-			if (moves[i].value > value) {
-				value = moves[i].value;
-				goodMoveSpot = i;
-				yPos = moves[i].yPos;
+		// Go all the way to the right
+		for (int i = 1; canMove(temp, temp.curX + i, temp.curY); i++) {
+			moves.add(dropNow(temp));
+			temp.curX = orgX;
+			temp.curY = orgY;
+		}
+		for (int i = 0; i < moves.size(); i++) {
+			// System.out.print(moves.get(i).value + " ");
+			if (moves.get(i).value > value) {
+				value = moves.get(i).value;
+				// System.out.println("Best Value has been updated to " +
+				// value);
+				yPos = moves.get(i).yPos;
+				xPos = moves.get(i).xPos;
 
 				// If they are equal, decide based on which piece will land
 				// lower
-			} else if (moves[i].value == value) {
-				if (moves[i].yPos > yPos) {
-					value = moves[i].value;
-					goodMoveSpot = i;
-					yPos = moves[i].yPos;
+			} else if (moves.get(i).value == value) {
+				if (moves.get(i).yPos > yPos) {
+					value = moves.get(i).value;
+					yPos = moves.get(i).yPos;
+					xPos = moves.get(i).xPos;
 				}
 			}
 		}
 		System.out.println();
 
 		// leSuperDrop();
-		return new BestSpot(current.curX - current.leftMoves + goodMoveSpot,
-				value);
+		return new BestSpot(xPos, value, yPos);
 	}
 
-	public ValueandY dropNow(Tetri temp) {
+	public ValueInfo dropNow(Tetri temp) {
 		int tempBoard[][] = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		for (int i = 0; i < BOARD_HEIGHT; i++) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
@@ -180,13 +191,14 @@ public class AI extends JPanel implements ActionListener, Runnable {
 
 		// If the piece will clear a line
 		if (remove(tempBoard)) {
-			return new ValueandY(1, temp.curY);
+			return new ValueInfo(1, temp.curY, temp.curX);
 		}
 		int badDrop = badDrop(tempBoard, temp);
+		// System.out.println("Value of badDrop is " + badDrop);
 		if (badDrop == 0) {
-			return new ValueandY(0, temp.curY);
+			return new ValueInfo(0, temp.curY, temp.curX);
 		} else {
-			return new ValueandY(-badDrop, temp.curY);
+			return new ValueInfo(-1 * badDrop, temp.curY, temp.curX);
 		}
 
 	}
@@ -202,9 +214,12 @@ public class AI extends JPanel implements ActionListener, Runnable {
 					+ temp.coords[i][1] + 1] == 0) {
 				count++;
 				// Analyze for if there are more than one blanks below
+				// System.out.println("Temp's current Y is " + temp.curY +
+				// " and count is " + count);
 				for (int j = 1; temp.curY + temp.coords[i][1] + 1 + j < BOARD_HEIGHT; j++) {
 					if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
 							+ temp.coords[i][1] + 1 + j] == 0) {
+						// System.out.println("Count is now " + count);
 						count++;
 					} else {
 						break;
@@ -212,6 +227,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 				}
 			}
 		}
+		// System.out.println("Count's final value is " + count);
 		return count;
 	}
 
@@ -246,7 +262,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	public void actionPerformed(ActionEvent e) {
 
 		// drop();
-		// intelligence();
+		intelligence();
 	}
 
 	public void getSqHeight() {
@@ -520,8 +536,8 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		if (linesCleared != 0 && linesCleared % 10 == 0) {
 			level++;
 			multiplier += 0.5;
-			delay -= level * 10;
-			timer.setDelay(delay);
+			// delay -= level * 10;
+			// timer.setDelay(delay);
 		}
 	}
 
@@ -682,21 +698,23 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	}
 
 	public class BestSpot {
-		int position, value;
+		int xPos, value, yPos;
 
-		BestSpot(int position, int value) {
-			this.position = position;
+		BestSpot(int xPos, int value, int yPos) {
+			this.xPos = xPos;
 			this.value = value;
+			this.yPos = yPos;
 		}
 	}
 
 	// Used so that l can return both the value and y position
-	public class ValueandY {
-		int yPos, value;
+	public class ValueInfo {
+		int yPos, value, xPos;
 
-		ValueandY(int yPos, int value) {
+		ValueInfo(int value, int yPos, int xPos) {
 			this.yPos = yPos;
 			this.value = value;
+			this.xPos = xPos;
 		}
 	}
 }
