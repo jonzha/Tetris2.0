@@ -41,11 +41,20 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	int[] statistics;
 	Clip backgroundMusic = null;
 	boolean music, sound;
+	int analyzeLevel = 1;
+	int analyzeRuns;
+	boolean analyze = false;
+	int[] testPieces = { 1 };
+	int testPiece;
+	double holeAmt = -2;
+	double blockadeAmt = -0.2;
+	double clearAmt = 2.5;
+	double heightAmt = -0.3;
 
 	public AI() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
-		delay = 3;
+		delay = 2;
 		timer = new Timer(delay, this);
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
@@ -66,6 +75,8 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		multiplier = 1;
 		topOfPiece = 0;
 		statistics = new int[8];
+		analyzeRuns = 0;
+		testPiece = 0;
 		// Thread runner = new Thread(this, "AI Thread");
 		// runner.start(); // (2) Start the thread.
 
@@ -83,12 +94,49 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		intelligence();
 	}
 
+	public int analyzeNext(int[][] tempBoard) {
+
+		int value = 0;
+		// Check each piece for that drop
+		for (int j = 1; j < 8; j++) {
+			value += intelligence2(j, tempBoard);
+		}
+		analyzeRuns = 0;
+		return value;
+	}
+
+	public double intelligence2(int identifier, int[][] tempBoard) {
+		Tetri temp = new Tetri(identifier);
+		temp.curX = BOARD_WIDTH / 2 - 1;
+		temp.curY = 1;
+		BestSpot[] spots = new BestSpot[4];
+		double bestValue = -100000;
+		int yPos = 0;
+		for (int i = 0; i < 4; i++) {
+			spots[i] = analyzePiece(temp, tempBoard);
+			if (spots[i].value > bestValue) {
+				bestValue = spots[i].value;
+				yPos = spots[i].yPos;
+			}
+			// Checks if they're equal to pick the lower one
+			else if (spots[i].value == bestValue) {
+				if (spots[i].yPos > yPos) {
+					bestValue = spots[i].value;
+					yPos = spots[i].yPos;
+				}
+			}
+			rotate(temp);
+			// System.out.println();
+		}
+		return bestValue;
+	}
+
 	public void intelligence() {
 		Tetri temp = new Tetri(current.identifier);
 		temp.curX = current.curX;
 		temp.curY = current.curY;
 		BestSpot[] spots = new BestSpot[4];
-		int bestValue = -10;
+		double bestValue = -100000;
 		int bestPosition = 0;
 		int rotateAmt = 0;
 		int yPos = 0;
@@ -99,11 +147,15 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		}
 		// System.out.println(dropNow(temp));
 		for (int i = 0; i < 4; i++) {
-			spots[i] = analyzePiece(temp);
+			spots[i] = analyzePiece(temp, board);
+			rotate(temp);
+		}
+		for (int i = 0; i < 4; i++) {
 			if (spots[i].value > bestValue) {
 				bestValue = spots[i].value;
 				bestPosition = spots[i].xPos;
 				rotateAmt = i;
+				yPos = spots[i].yPos;
 			}
 			// Checks if they're equal to pick the lower one
 			else if (spots[i].value == bestValue) {
@@ -114,10 +166,10 @@ public class AI extends JPanel implements ActionListener, Runnable {
 					yPos = spots[i].yPos;
 				}
 			}
-			rotate(temp);
 			// System.out.println();
 		}
 
+		// The actual piece falling and whatnot
 		for (int i = 0; i < rotateAmt; i++) {
 			rotate(current);
 		}
@@ -127,8 +179,21 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		}
 	}
 
-	public BestSpot analyzePiece(Tetri temp) {
-		int value = -4;
+	public void BadDropTest() {
+		Tetri temp = new Tetri(current.identifier);
+		temp.curX = current.curX;
+		temp.curY = current.curY;
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 2; j++) {
+				temp.coords[i][j] = current.coords[i][j];
+			}
+		}
+		System.out.println(dropNow(temp, board).value);
+
+	}
+
+	public BestSpot analyzePiece(Tetri temp, int[][] board) {
+		double value = -10000;
 		int orgX = temp.curX;
 		int orgY = temp.curY;
 		int yPos = 0;
@@ -137,18 +202,19 @@ public class AI extends JPanel implements ActionListener, Runnable {
 
 		// Go all the way to the left
 		for (int i = 0; canMove(temp, temp.curX - i, temp.curY); i++) {
-			moves.add(dropNow(temp));
+			moves.add(dropNow(temp, board));
 			temp.curX = orgX;
 			temp.curY = orgY;
 		}
 		// Go all the way to the right
 		for (int i = 1; canMove(temp, temp.curX + i, temp.curY); i++) {
-			moves.add(dropNow(temp));
+			moves.add(dropNow(temp, board));
 			temp.curX = orgX;
 			temp.curY = orgY;
 		}
 		for (int i = 0; i < moves.size(); i++) {
 			// System.out.print(moves.get(i).value + " ");
+
 			if (moves.get(i).value > value) {
 				value = moves.get(i).value;
 				// System.out.println("Best Value has been updated to " +
@@ -161,18 +227,19 @@ public class AI extends JPanel implements ActionListener, Runnable {
 			} else if (moves.get(i).value == value) {
 				if (moves.get(i).yPos > yPos) {
 					value = moves.get(i).value;
+					// System.out.println("Best Value has been updated to "
+					// + value);
 					yPos = moves.get(i).yPos;
 					xPos = moves.get(i).xPos;
 				}
 			}
 		}
-		System.out.println();
 
 		// leSuperDrop();
 		return new BestSpot(xPos, value, yPos);
 	}
 
-	public ValueInfo dropNow(Tetri temp) {
+	public ValueInfo dropNow(Tetri temp, int[][] board) {
 		int tempBoard[][] = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		for (int i = 0; i < BOARD_HEIGHT; i++) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
@@ -185,54 +252,117 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		}
 		for (int i = 0; i < 4; i++) {
 			tempBoard[temp.curX + temp.coords[i][0]][temp.curY
-					+ temp.coords[i][1]] = temp.identifier;
+					+ temp.coords[i][1]] = 10;// This is set to 10 to
+												// differentiate between this
+												// piece and actual fallen
+												// pieces. Used for blockade
+												// detection
 		}
+		// analyze
+		int nextValue = 0;
+		if (analyze) {
+			if (analyzeRuns < analyzeLevel) {
+				// System.out.println("analyzing...");
+				analyzeRuns++;
+
+				nextValue = analyzeNext(tempBoard);
+				// System.out.println(nextValue);
+			}
+		}
+
 		// All that stuff up there sets up the thing for the actual code
 
-		// If the piece will clear a line
-		if (remove(tempBoard)) {
-			return new ValueInfo(1, temp.curY, temp.curX);
-		}
-		int badDrop = badDrop(tempBoard, temp);
+		double badDrop = badDrop(tempBoard, temp);
 		// System.out.println("Value of badDrop is " + badDrop);
-		if (badDrop == 0) {
-			return new ValueInfo(0, temp.curY, temp.curX);
-		} else {
-			return new ValueInfo(-1 * badDrop, temp.curY, temp.curX);
-		}
+
+		return new ValueInfo(badDrop + nextValue, temp.curY, temp.curX);
 
 	}
 
 	// Returns number of pieces where underneath is a blank
-	public int badDrop(int[][] tempBoard, Tetri temp) {
-		int count = 0;
+	public double badDrop(int[][] tempBoard, Tetri temp) {
+		double count = 0;
+
+		// Copy of board for the remove function
+		int tempBoard2[][] = new int[BOARD_WIDTH][BOARD_HEIGHT];
+		for (int i = 0; i < BOARD_HEIGHT; i++) {
+			for (int j = 0; j < BOARD_WIDTH; j++) {
+				tempBoard2[j][i] = tempBoard[j][i];
+			}
+		}
+
+		// If the piece will clear a line
+		count += clearAmt * remove(tempBoard2);
+
+		// System.out.println("My count is now: " + count);
 		for (int i = 0; i < 4; i++) {
+			int firstBlockPos = 0; // Check if there is at least one block in
+			// this column. Used for blockade
+			// detection
+
+			// If it's at the bottom
 			if (temp.curY + temp.coords[i][1] == BOARD_HEIGHT - 1) {
 				continue;
 			}
+
+			// Analyze for if there are more than one blanks below
+			for (int j = 1; temp.curY + temp.coords[i][1] + j < BOARD_HEIGHT; j++) {
+				if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
+						+ temp.coords[i][1] + j] == 0) {
+					// System.out.println("Count is now " + count);
+					count += holeAmt;
+					/*
+					 * System.out.println("My count has been decreased by: " +
+					 * holeAmt + " because of a hole");
+					 */
+				} else {
+					break;
+				}
+			}
+
+			// Find first piece in the column (Used for blockade)
+			for (int j = 0; j < BOARD_HEIGHT; j++) {
+				if (tempBoard[temp.curX + temp.coords[i][0]][j] != 0
+						&& tempBoard[temp.curX + temp.coords[i][0]][j] != 10) {
+					firstBlockPos = j;
+					break;
+				}
+			}
+			// Analyze for blockades
+			// Check for repeat blockades. Redundant and inaccurate
 			if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
-					+ temp.coords[i][1] + 1] == 0) {
-				count++;
-				// Analyze for if there are more than one blanks below
-				// System.out.println("Temp's current Y is " + temp.curY +
-				// " and count is " + count);
-				for (int j = 1; temp.curY + temp.coords[i][1] + 1 + j < BOARD_HEIGHT; j++) {
-					if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
-							+ temp.coords[i][1] + 1 + j] == 0) {
-						// System.out.println("Count is now " + count);
-						count++;
-					} else {
-						break;
+					+ temp.coords[i][1] + 1] != 10) {
+				if (firstBlockPos != 0) {
+					for (int j = 1; firstBlockPos + j < BOARD_HEIGHT; j++) {
+						if (tempBoard[temp.curX + temp.coords[i][0]][firstBlockPos
+								+ j] == 0) {
+							count += blockadeAmt;
+							// System.out.println("My count has been decreased by: "
+							// + blockadeAmt + " because of a blockade");
+
+							/*
+							 * System.out.println("Blockade encountered at piece"
+							 * + i + " . Current Y is " + (temp.curY +
+							 * temp.coords[i][1]));
+							 */
+						}
 					}
 				}
 			}
 		}
+		// Height penalty
+		count += (BOARD_HEIGHT - temp.curY) * heightAmt;
+		/*
+		 * System.out .println("My count has been decreased by: " +
+		 * (BOARD_HEIGHT - temp.curY) * heightAmt + " because of height");
+		 */
 		// System.out.println("Count's final value is " + count);
 		return count;
 	}
 
-	public boolean remove(int[][] tempBoard) {
+	public int remove(int[][] tempBoard) {
 
+		int numRemoved = 0;
 		for (int i = BOARD_HEIGHT - 1; i >= 0; i--) {
 			boolean remove = true;
 
@@ -248,21 +378,25 @@ public class AI extends JPanel implements ActionListener, Runnable {
 					tempBoard[j][i] = 0;
 
 				}
+				numRemoved++;
+				for (int z = i; z > 0; z--) {
+					for (int j = 0; j < BOARD_WIDTH; j++) {
+						tempBoard[j][z] = tempBoard[j][z - 1];
+					}
+				}
 				i++; // Needed so that the function can recheck the current line
 						// which in reality is the next line up. Needed for
 						// multiple line clears at the same time
-				return true;
-
 			}
 			// repaint();
 		}
-		return false;
+		return numRemoved;
 	}
 
 	public void actionPerformed(ActionEvent e) {
 
 		// drop();
-		intelligence();
+		// intelligence();
 	}
 
 	public void getSqHeight() {
@@ -279,7 +413,9 @@ public class AI extends JPanel implements ActionListener, Runnable {
 
 	public void newPiece() {
 
-		current = new Tetri(1 + (int) (Math.random() * ((7 - 1) + 1)));
+		current = new Tetri(// testPieces[testPiece]);
+				// testPiece++;
+				1 + (int) (Math.random() * ((7 - 1) + 1)));
 		statistics[current.identifier]++;
 		current.curX = BOARD_WIDTH / 2 - 1;
 		current.curY = 1;
@@ -361,8 +497,9 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		// score
 		g.setColor(Color.black);
 		FontMetrics fm = getFontMetrics(getFont());
-		int scoreWidth = fm.stringWidth("Score: " + score);
-		g.drawString("Score: " + score, (int) (width - scoreWidth - 5), 15);
+		int scoreWidth = fm.stringWidth("Score: " + linesCleared);
+		g.drawString("Score: " + linesCleared, (int) (width - scoreWidth - 5),
+				15);
 
 		// Statusbar
 		g.fillRect(0, (int) (height - 29), (int) width, 29);
@@ -692,29 +829,40 @@ public class AI extends JPanel implements ActionListener, Runnable {
 			case KeyEvent.VK_I:
 				intelligence();
 				break;
+			case KeyEvent.VK_B:
+				BadDropTest();
+				break;
 			}
 
 		}
 	}
 
 	public class BestSpot {
-		int xPos, value, yPos;
+		int xPos, yPos;
+		double value;
 
-		BestSpot(int xPos, int value, int yPos) {
+		BestSpot(int xPos, double value2, int yPos) {
 			this.xPos = xPos;
-			this.value = value;
+			this.value = value2;
 			this.yPos = yPos;
 		}
 	}
 
 	// Used so that l can return both the value and y position
 	public class ValueInfo {
-		int yPos, value, xPos;
+		int yPos, xPos;
+		double value;
 
-		ValueInfo(int value, int yPos, int xPos) {
+		ValueInfo(double d, int yPos, int xPos) {
 			this.yPos = yPos;
-			this.value = value;
+			this.value = d;
 			this.xPos = xPos;
 		}
 	}
 }
+// print board
+/*
+ * for (int i = BOARD_HEIGHT - 1; i >= 0; i--) { for (int j = 0; j <
+ * BOARD_WIDTH; j++) { System.out.print(tempBoard[j][i] + " "); }
+ * System.out.println(); }
+ */
