@@ -20,7 +20,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class AI extends JPanel implements ActionListener, Runnable {
+public class AI extends JPanel implements ActionListener {
 	final int BOARD_WIDTH = 10;
 	final int BOARD_HEIGHT = 22;
 	int[][] board;
@@ -46,15 +46,27 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	boolean analyze = false;
 	int[] testPieces = { 1 };
 	int testPiece;
-	double holeAmt = -2;
-	double blockadeAmt = -0.2;
-	double clearAmt = 2.5;
-	double heightAmt = -0.3;
+	boolean auto = true;
+	double holeAmt = -67.2967130383513;// -96.42254331216778;
+	double blockadeAmt = -3.5782178537107114;// -0.20144455909150594;
+	double clearAmt = 29.262742279738056;// 92.27243875284884;
+	double heightAmt = -30.239290894575035;// -52.97011586972147;
+	double flatAmt = 81.83680231556878;// 90.281208563613479;
+	double wellAmt = 19.97089351954328;// 99.9959472448669;
+	double wallAmt = 41.83356708026082;// 57.07871830039713;
+	double floorAmt = -35.566057676679065;// 2;
+	boolean animate = true;
+	boolean marathon = true; // End game after x amount of lines?
+	int endAfter = 100; // End the game after x amount of lines
 
 	public AI() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
-		delay = 2;
+		if (animate) {
+			delay = 100;
+		} else {
+			delay = 1;
+		}
 		timer = new Timer(delay, this);
 		current = new Tetri(0);
 		// topOfPieces = new int[BOARD_WIDTH];
@@ -68,7 +80,12 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		squareHeight = 16;
 		squareWidth = 20;
 		score = 0;
-		delay = 3;
+		if (animate) {
+			delay = 100;
+		} else {
+			delay = 1;
+		}
+		timer.setDelay(delay);
 		level = 1;
 		gameOver = false;
 		linesCleared = 0;
@@ -90,10 +107,6 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		// tryMove(current, 10, 40);
 	}
 
-	public void run() {
-		intelligence();
-	}
-
 	public int analyzeNext(int[][] tempBoard) {
 
 		int value = 0;
@@ -110,7 +123,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		temp.curX = BOARD_WIDTH / 2 - 1;
 		temp.curY = 1;
 		BestSpot[] spots = new BestSpot[4];
-		double bestValue = -100000;
+		double bestValue = Integer.MIN_VALUE;
 		int yPos = 0;
 		for (int i = 0; i < 4; i++) {
 			spots[i] = analyzePiece(temp, tempBoard);
@@ -136,7 +149,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		temp.curX = current.curX;
 		temp.curY = current.curY;
 		BestSpot[] spots = new BestSpot[4];
-		double bestValue = -100000;
+		double bestValue = Integer.MIN_VALUE;
 		int bestPosition = 0;
 		int rotateAmt = 0;
 		int yPos = 0;
@@ -168,14 +181,26 @@ public class AI extends JPanel implements ActionListener, Runnable {
 			}
 			// System.out.println();
 		}
+		animation(rotateAmt, bestPosition);
+	}
+
+	public void animation(int rotateAmt, int xPos) {
 
 		// The actual piece falling and whatnot
 		for (int i = 0; i < rotateAmt; i++) {
 			rotate(current);
 		}
-
-		if (canMove(current, bestPosition, current.curY)) {
-			leSuperDrop();
+		while (current.curX != xPos) {
+			if (current.curX > xPos) {
+				canMove(current, current.curX - 1, current.curY);
+			} else if (current.curX < xPos) {
+				canMove(current, current.curX + 1, current.curY);
+			}
+		}
+		if (delay < 10) {
+			if (canMove(current, xPos, current.curY)) {
+				leSuperDrop();
+			}
 		}
 	}
 
@@ -193,7 +218,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 	}
 
 	public BestSpot analyzePiece(Tetri temp, int[][] board) {
-		double value = -10000;
+		double value = Integer.MIN_VALUE;
 		int orgX = temp.curX;
 		int orgY = temp.curY;
 		int yPos = 0;
@@ -291,24 +316,64 @@ public class AI extends JPanel implements ActionListener, Runnable {
 			}
 		}
 
-		// If the piece will clear a line
+		// ----If the piece will clear a line----
 		count += clearAmt * remove(tempBoard2);
 
 		// System.out.println("My count is now: " + count);
 		for (int i = 0; i < 4; i++) {
+			int tempXPos = temp.curX + temp.coords[i][0];
+			int tempYPos = temp.curY + temp.coords[i][1];
+
 			int firstBlockPos = 0; // Check if there is at least one block in
 			// this column. Used for blockade
 			// detection
 
-			// If it's at the bottom
-			if (temp.curY + temp.coords[i][1] == BOARD_HEIGHT - 1) {
+			// ----Flat Bonus----
+			// To the right
+			if (tempXPos + 1 < BOARD_WIDTH) {
+				if (tempBoard[tempXPos + 1][tempYPos] != 0
+						&& tempBoard[tempXPos + 1][tempYPos] != 10) {
+					count += flatAmt;
+					// System.out.println("Flat bonus because of right");
+				}
+			}
+			// To the left
+			if (tempXPos - 1 >= 0) {
+				if (tempBoard[tempXPos - 1][tempYPos] != 0
+						&& tempBoard[tempXPos - 1][tempYPos] != 10) {
+					count += flatAmt;
+					// System.out.println("Flat bonus because of left");
+
+				}
+			}
+			// To the bottom
+			if (tempYPos + 1 < BOARD_HEIGHT) {
+				if (tempBoard[tempXPos][tempYPos + 1] != 0
+						&& tempBoard[tempXPos][tempYPos + 1] != 10) {
+					count += flatAmt;
+					// System.out.println("Flat bonus because of bottom");
+
+				}
+			}
+
+			// ---Wall Check---
+			if (tempXPos == 0 || tempXPos == BOARD_WIDTH - 1) {
+				count += wallAmt;
+				// System.out.println("Wall detected at piece " + i);
+			}
+
+			// ---Floor check---
+			// If it's at the bottom restart because blockades and holes can't
+			// occur also for floor check
+			if (tempYPos == BOARD_HEIGHT - 1) {
+				count += floorAmt;
+				// / System.out.println("Floor detected at piece " + i);
 				continue;
 			}
 
 			// Analyze for if there are more than one blanks below
-			for (int j = 1; temp.curY + temp.coords[i][1] + j < BOARD_HEIGHT; j++) {
-				if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
-						+ temp.coords[i][1] + j] == 0) {
+			for (int j = 1; tempYPos + j < BOARD_HEIGHT; j++) {
+				if (tempBoard[tempXPos][tempYPos + j] == 0) {
 					// System.out.println("Count is now " + count);
 					count += holeAmt;
 					/*
@@ -322,20 +387,17 @@ public class AI extends JPanel implements ActionListener, Runnable {
 
 			// Find first piece in the column (Used for blockade)
 			for (int j = 0; j < BOARD_HEIGHT; j++) {
-				if (tempBoard[temp.curX + temp.coords[i][0]][j] != 0
-						&& tempBoard[temp.curX + temp.coords[i][0]][j] != 10) {
+				if (tempBoard[tempXPos][j] != 0 && tempBoard[tempXPos][j] != 10) {
 					firstBlockPos = j;
 					break;
 				}
 			}
-			// Analyze for blockades
+			// ----Analyze for blockades----
 			// Check for repeat blockades. Redundant and inaccurate
-			if (tempBoard[temp.curX + temp.coords[i][0]][temp.curY
-					+ temp.coords[i][1] + 1] != 10) {
+			if (tempBoard[tempXPos][tempYPos + 1] != 10) {
 				if (firstBlockPos != 0) {
 					for (int j = 1; firstBlockPos + j < BOARD_HEIGHT; j++) {
-						if (tempBoard[temp.curX + temp.coords[i][0]][firstBlockPos
-								+ j] == 0) {
+						if (tempBoard[tempXPos][firstBlockPos + j] == 0) {
 							count += blockadeAmt;
 							// System.out.println("My count has been decreased by: "
 							// + blockadeAmt + " because of a blockade");
@@ -349,14 +411,26 @@ public class AI extends JPanel implements ActionListener, Runnable {
 					}
 				}
 			}
+
 		}
 		// Height penalty
 		count += (BOARD_HEIGHT - temp.curY) * heightAmt;
+
 		/*
 		 * System.out .println("My count has been decreased by: " +
 		 * (BOARD_HEIGHT - temp.curY) * heightAmt + " because of height");
 		 */
+
+		// ----Well detection----
+		for (int i = 0; i < BOARD_HEIGHT; i++) {
+			for (int j = 0; j < BOARD_WIDTH; j++) {
+				tempBoard2[j][i] = tempBoard[j][i];
+			}
+		}
+		count -= wellCount(tempBoard2) * wellAmt;
+
 		// System.out.println("Count's final value is " + count);
+
 		return count;
 	}
 
@@ -393,10 +467,173 @@ public class AI extends JPanel implements ActionListener, Runnable {
 		return numRemoved;
 	}
 
-	public void actionPerformed(ActionEvent e) {
+	// ---Analyzes how many wells there are on the current board---
+	public int wellCount(int[][] tempBoard) {
+		// Note a value of 11 means that blank has been checked.
+		int count = 0;
+		for (int i = BOARD_HEIGHT - 1; i >= 0; i--) {
+			// ends at width-1 because those are the last rows
+			for (int j = 0; j < BOARD_WIDTH - 1; j++) {
+				// Check the left edge
+				if (j == 1 && tempBoard[j][i] != 0 && tempBoard[0][i] == 0) {
+					int holeCount = 0;
+					// Going down the hole!
+					for (int o = i; o >= 0; o--) {
+						// if either the hole stops being a hole or the boundary
+						// stops being a boundary break
+						// System.out.println("At point" + (j - 1) + ", " + o
+						// + " there is a " + tempBoard[j - 1][o]);
 
-		// drop();
-		// intelligence();
+						// IF YOU WANT WELLS TO COUNT EVEN IF COVERED
+						/*
+						 * if (tempBoard[j - 1][o] != 0 || tempBoard[j][o] == 0)
+						 * { break; }
+						 */
+
+						// Check if the well is covered. If it is it's not a
+						// well!
+						boolean stop = false;
+						for (int m = o; m >= 0; m--) {
+							if (tempBoard[j - 1][m] != 0) {
+								stop = true;
+								break;
+							}
+						}
+						if (stop) {
+							break;
+						}
+
+						// If the side isn't a thing
+						if (tempBoard[j][o] == 0) {
+							break;
+						}
+
+						tempBoard[j - 1][o] = 11;
+						holeCount++;
+						if (holeCount == 3) {
+							count++;
+							// System.out
+							// .println("Well encountered at " + (j - 1));
+
+							// Set next piece to checked as well since a l piece
+							// is 4 long, but a well is only 3
+							if (o > 0) {
+								tempBoard[j - 1][o - 1] = 11;
+							}
+						}
+					}
+
+				}
+				// check for wells looking to the right
+				if (tempBoard[j][i] != 0 && tempBoard[j + 1][i] == 0) {
+					// ===Check for wells in the middle===
+					if (j < BOARD_WIDTH - 2) {
+						if (tempBoard[j + 2][i] != 0) {
+							int holeCount = 0;
+							// Going down the hole!
+							for (int o = i; o >= 0; o--) {
+								/*
+								 * // if either the hole stops being a hole or
+								 * the // boundary stops being a boundary break
+								 * if (tempBoard[j + 1][o] != 0 ||
+								 * tempBoard[j][o] == 0 || tempBoard[j + 2][o]
+								 * == 0) { break; }
+								 */
+
+								// Check if the well is covered. If it is it's
+								// not a
+								// well!
+								boolean stop = false;
+								for (int m = o; m >= 0; m--) {
+									if (tempBoard[j + 1][m] != 0) {
+										stop = true;
+										break;
+									}
+								}
+								if (stop) {
+									break;
+								}
+
+								// If the side isn't a thing
+								if (tempBoard[j][o] == 0
+										|| tempBoard[j + 2][o] == 0) {
+									break;
+								}
+
+								tempBoard[j + 1][o] = 11;
+
+								holeCount++;
+								if (holeCount == 3) {
+									count++;
+									// System.out.println("Well encountered at "
+									// + (j + 1));
+
+									// Set next piece to checked as well since a
+									// l piece is 4 long, but a well is only 3
+									if (o > 0) {
+										tempBoard[j + 1][o - 1] = 11;
+									}
+
+								}
+							}
+						}
+						j++;// Skips the next row because we know it's blank
+					}
+					// ===Check for wells at the right edge===
+					else if (j == BOARD_WIDTH - 2) {
+						int holeCount = 0;
+						// Going down the hole!
+						for (int o = i; o >= 0; o--) {
+							/*
+							 * // Same thing as above really if (tempBoard[j +
+							 * 1][o] != 0 || tempBoard[j][o] == 0) { break; }
+							 */
+
+							// Check if the well is covered. If it is it's not a
+							// well!
+							boolean stop = false;
+							for (int m = o; m >= 0; m--) {
+								if (tempBoard[j + 1][m] != 0) {
+									stop = true;
+									break;
+								}
+							}
+							if (stop) {
+								break;
+							}
+
+							// If the side isn't a thing
+							if (tempBoard[j][o] == 0) {
+								break;
+							}
+
+							holeCount++;
+							tempBoard[j + 1][o] = 11;
+
+							if (holeCount == 3) {
+								count++;
+								// System.out.println("Well encountered at "
+								// + (j + 1));
+								// Set next piece to checked as well since a l
+								// piece is 4 long, but a well is only 3
+								if (o > 0) {
+									tempBoard[j + 1][o - 1] = 11;
+								}
+
+							}
+						}
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		if (animate)
+			drop();
+		if (auto)
+			intelligence();
 	}
 
 	public void getSqHeight() {
@@ -657,15 +894,22 @@ public class AI extends JPanel implements ActionListener, Runnable {
 			}
 			// repaint();
 		}
-		if (numRemoved < 3) {
-			score += 1000 * multiplier * numRemoved;
+		if (numRemoved == 1) {
+			score += 40;
+		} else if (numRemoved == 2) {
+			score += 100;
 		} else if (numRemoved == 3) {
-			score += 1000 * multiplier * numRemoved * 3;
+			score += 300;
 		} else if (numRemoved == 4) {
-			score += 1000 * multiplier * numRemoved * 5;
+			score += 1200;
 
 		}
-
+		if (marathon) {
+			if (linesCleared >= endAfter) {
+				timer.stop();
+				gameOver = true;
+			}
+		}
 	}
 
 	public void newLevel() {
@@ -805,7 +1049,7 @@ public class AI extends JPanel implements ActionListener, Runnable {
 				pause();
 			}
 			if (pause) {
-				return;
+				// return;
 			}
 			switch (key) {
 			case KeyEvent.VK_LEFT:
@@ -816,12 +1060,12 @@ public class AI extends JPanel implements ActionListener, Runnable {
 				break;
 			case KeyEvent.VK_DOWN:
 				drop();
-				score += 5 * multiplier;
+				// score += 5 * multiplier;
 				break;
 			case KeyEvent.VK_SPACE:
 				int startY = current.curY;
 				leSuperDrop();
-				score += (topOfPiece - startY) * 10 * multiplier;
+				// score += (topOfPiece - startY) * 10 * multiplier;
 				break;
 			case KeyEvent.VK_UP:
 				rotate(current);
@@ -831,6 +1075,17 @@ public class AI extends JPanel implements ActionListener, Runnable {
 				break;
 			case KeyEvent.VK_B:
 				BadDropTest();
+				break;
+			case KeyEvent.VK_J:
+				delay -= 10;
+				if (delay < 1) {
+					delay = 1;
+				}
+				timer.setDelay(delay);
+				break;
+			case KeyEvent.VK_K:
+				delay += 10;
+				timer.setDelay(delay);
 				break;
 			}
 

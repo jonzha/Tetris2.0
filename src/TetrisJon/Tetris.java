@@ -394,8 +394,10 @@ public class Tetris extends JFrame implements ActionListener {
 
 	}
 
-	/*
-	 * public static void main(String[] args) { Tetris game = new Tetris();
-	 * game.setLocationRelativeTo(null); game.setVisible(true); }
-	 */
+	public static void main(String[] args) {
+		Tetris game = new Tetris();
+		game.setLocationRelativeTo(null);
+		game.setVisible(true);
+	}
+
 }
