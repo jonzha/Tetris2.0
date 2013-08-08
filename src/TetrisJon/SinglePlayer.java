@@ -229,10 +229,10 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	private void drawOutline(Graphics g, int x, int y, int identifier) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
 		Color color = colors[identifier];
 		g.setColor(color);
 
@@ -246,10 +246,10 @@ public class SinglePlayer extends JPanel implements ActionListener {
 	}
 
 	private void drawSquare(Graphics g, int x, int y, int identifier, int i) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
 		Color color = colors[identifier];
 
 		// Creates the actual block
@@ -267,8 +267,9 @@ public class SinglePlayer extends JPanel implements ActionListener {
 				+ squareHeight - 1);
 		g.drawLine(x + squareWidth - 1, y + squareHeight - 1, x + squareWidth
 				- 1, y + 1);
-		g.setColor(Color.white);
-		g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
+
+		// g.setColor(Color.white);
+		// g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
 	}
 
 	public void fillWithEmpty() {

@@ -23,7 +23,7 @@ import javax.swing.Timer;
 public class Multiplayer2 extends JPanel implements ActionListener, KeyListener {
 	final int BOARD_WIDTH = 20;
 	final int BOARD_HEIGHT = 22;
-	int[][] board;
+	Tetri[][] board;
 	int[][] airBoard1;
 	int[][] airBoard2;
 	Tetri current;
@@ -48,7 +48,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	boolean sound, music;
 
 	public Multiplayer2() {
-		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
+		board = new Tetri[BOARD_WIDTH][BOARD_HEIGHT];
 		airBoard1 = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		airBoard2 = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
@@ -155,7 +155,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 				realLanding = true;
 				return false;
 			}
-			if (board[newX][newY] != 0) {
+			if (board[newX][newY].identifier != 0) {
 				realLanding = true;
 				return false;
 			}
@@ -248,7 +248,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 			// current.coords[i][0]) +
 			// "y is " + (current.curY + current.coords[i][1]));
 			board[tetri.curX + tetri.coords[i][0]][tetri.curY
-					+ tetri.coords[i][1]] = tetri.identifier;
+					+ tetri.coords[i][1]] = tetri;
 		}
 		// getTopOfPieces();
 		removeLines();
@@ -266,9 +266,14 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		getSqHeight();
 		for (int i = 0; i < BOARD_HEIGHT; i++) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
-				if (board[j][i] != 0) {
-					drawSquare(g, j * squareWidth, i * squareHeight,
-							board[j][i], i);
+				if (board[j][i].identifier != 0) {
+					if (board[j][i].player == 1) {
+						drawSquare(g, j * squareWidth, i * squareHeight,
+								board[j][i].identifier, i);
+					} else {
+						drawSquare2(g, j * squareWidth, i * squareHeight,
+								board[j][i].identifier, i);
+					}
 				}
 			}
 		}
@@ -300,8 +305,13 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		for (int i = 3; i >= 0; i--) {
 			int x = tetri.curX + tetri.coords[i][0];
 			int y = tetri.curY + tetri.coords[i][1];
-			drawSquare(g, x * squareWidth, y * squareHeight, tetri.identifier,
-					i);
+			if (tetri.player == 1) {
+				drawSquare(g, x * squareWidth, y * squareHeight,
+						tetri.identifier, i);
+			} else {
+				drawSquare2(g, x * squareWidth, y * squareHeight,
+						tetri.identifier, i);
+			}
 		}
 
 		Tetri temp = new Tetri(tetri.identifier);
@@ -318,16 +328,39 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 		for (int i = 3; i >= 0; i--) {
 			int x = temp.curX + tetri.coords[i][0];
 			int y = temp.curY + tetri.coords[i][1];
-			drawOutline(g, x * squareWidth, y * squareHeight, temp.identifier);
+			if (tetri.player == 1) {
+				drawOutline(g, x * squareWidth, y * squareHeight,
+						temp.identifier);
+			} else {
+				drawOutline2(g, x * squareWidth, y * squareHeight,
+						temp.identifier);
+			}
 		}
 
 	}
 
 	private void drawOutline(Graphics g, int x, int y, int identifier) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
+		Color color = colors[identifier];
+		g.setColor(color);
+
+		g.drawLine(x, y + squareHeight - 1, x, y);
+		g.drawLine(x, y, x + squareWidth - 1, y);
+		g.drawLine(x + 1, y + squareHeight - 1, x + squareWidth - 1, y
+				+ squareHeight - 1);
+		g.drawLine(x + squareWidth - 1, y + squareHeight - 1, x + squareWidth
+				- 1, y + 1);
+
+	}
+
+	private void drawOutline2(Graphics g, int x, int y, int identifier) {
+		Color colors[] = { new Color(0, 0, 0), new Color(255, 40, 80),
+				new Color(235, 35, 70), new Color(215, 30, 60),
+				new Color(195, 25, 50), new Color(175, 20, 40),
+				new Color(155, 15, 30), new Color(135, 10, 10) };
 		Color color = colors[identifier];
 		g.setColor(color);
 
@@ -341,10 +374,10 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	}
 
 	private void drawSquare(Graphics g, int x, int y, int identifier, int i) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
 		Color color = colors[identifier];
 
 		// Creates the actual block
@@ -362,14 +395,42 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 				+ squareHeight - 1);
 		g.drawLine(x + squareWidth - 1, y + squareHeight - 1, x + squareWidth
 				- 1, y + 1);
-		g.setColor(Color.white);
-		g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
+
+		// g.setColor(Color.white);
+		// g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
+	}
+
+	private void drawSquare2(Graphics g, int x, int y, int identifier, int i) {
+		Color colors[] = { new Color(0, 0, 0), new Color(255, 40, 80),
+				new Color(235, 35, 70), new Color(215, 30, 60),
+				new Color(195, 25, 50), new Color(175, 20, 40),
+				new Color(155, 15, 30), new Color(135, 10, 10) };
+		Color color = colors[identifier];
+
+		// Creates the actual block
+		g.setColor(color);
+		g.fillRect(x + 1, y + 1, squareWidth - 2, squareHeight - 2);
+
+		// Creates the brighter lines for 3D effect
+		g.setColor(color.brighter());
+		g.drawLine(x, y + squareHeight - 1, x, y);
+		g.drawLine(x, y, x + squareWidth - 1, y);
+
+		// Creates the darker lines for 3D effect
+		g.setColor(color.darker());
+		g.drawLine(x + 1, y + squareHeight - 1, x + squareWidth - 1, y
+				+ squareHeight - 1);
+		g.drawLine(x + squareWidth - 1, y + squareHeight - 1, x + squareWidth
+				- 1, y + 1);
+
+		// g.setColor(Color.white);
+		// g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
 	}
 
 	public void fillWithEmpty() {
 		for (int i = 0; i < BOARD_WIDTH; i++) {
 			for (int j = 0; j < BOARD_HEIGHT; j++) {
-				board[i][j] = 0;
+				board[i][j] = new Tetri(0);
 				airBoard1[i][j] = 0;
 				airBoard2[i][j] = 0;
 			}
@@ -413,14 +474,14 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 
 			// Check if they are all are filled
 			for (int j = 0; j < BOARD_WIDTH; j++) {
-				if (board[j][i] == 0) {
+				if (board[j][i].identifier == 0) {
 					remove = false;
 				}
 			}
 
 			if (remove) {
 				for (int j = 0; j < BOARD_WIDTH; j++) {
-					board[j][i] = 0;
+					board[j][i].identifier = 0;
 
 				}
 				if (sound)
@@ -502,7 +563,7 @@ public class Multiplayer2 extends JPanel implements ActionListener, KeyListener 
 	public void getTopOfPieces() {
 		for (int i = BOARD_HEIGHT - 1; i >= 0; i--) {
 			for (int j = 0; j < BOARD_WIDTH; j++) {
-				if (board[j][i] != 0) {
+				if (board[j][i].identifier != 0) {
 					topOfPieces[j] = i;
 				}
 			}

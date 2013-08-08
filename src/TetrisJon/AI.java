@@ -21,6 +21,24 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class AI extends JPanel implements ActionListener {
+
+	// ***GUI***//
+	boolean analyze = false; // use stupid analyzing method?
+	boolean auto = true; // Automate? Note set animate to false if this is false
+	double holeAmt = -67.2967130383513;// -96.42254331216778;
+	double blockadeAmt = -3.5782178537107114;// -0.20144455909150594;
+	double clearAmt = 29.262742279738056;// 92.27243875284884;
+	double heightAmt = -30.239290894575035;// -52.97011586972147;
+	double flatAmt = 81.83680231556878;// 90.281208563613479;
+	double wellAmt = 19.97089351954328;// 99.9959472448669;
+	double wallAmt = 41.83356708026082;// 57.07871830039713;
+	double floorAmt = -35.566057676679065;// 2;
+	boolean animate = false; // drop animation set to false if auto is false
+	int initDelay = 100; // what the initial delay is if animate is true
+	boolean marathon = false; // End game after x amount of lines?
+	int endAfter = 100; // End the game after x amount of lines
+	// ***GUI***//
+
 	final int BOARD_WIDTH = 10;
 	final int BOARD_HEIGHT = 22;
 	int[][] board;
@@ -43,27 +61,14 @@ public class AI extends JPanel implements ActionListener {
 	boolean music, sound;
 	int analyzeLevel = 1;
 	int analyzeRuns;
-	boolean analyze = false;
 	int[] testPieces = { 1 };
 	int testPiece;
-	boolean auto = true;
-	double holeAmt = -67.2967130383513;// -96.42254331216778;
-	double blockadeAmt = -3.5782178537107114;// -0.20144455909150594;
-	double clearAmt = 29.262742279738056;// 92.27243875284884;
-	double heightAmt = -30.239290894575035;// -52.97011586972147;
-	double flatAmt = 81.83680231556878;// 90.281208563613479;
-	double wellAmt = 19.97089351954328;// 99.9959472448669;
-	double wallAmt = 41.83356708026082;// 57.07871830039713;
-	double floorAmt = -35.566057676679065;// 2;
-	boolean animate = true;
-	boolean marathon = true; // End game after x amount of lines?
-	int endAfter = 100; // End the game after x amount of lines
 
 	public AI() {
 		board = new int[BOARD_WIDTH][BOARD_HEIGHT];
 		setFocusable(true);
 		if (animate) {
-			delay = 100;
+			delay = initDelay;
 		} else {
 			delay = 1;
 		}
@@ -780,10 +785,10 @@ public class AI extends JPanel implements ActionListener {
 	}
 
 	private void drawOutline(Graphics g, int x, int y, int identifier) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
 		Color color = colors[identifier];
 		g.setColor(color);
 
@@ -797,29 +802,28 @@ public class AI extends JPanel implements ActionListener {
 	}
 
 	private void drawSquare(Graphics g, int x, int y, int identifier, int i) {
-		Color colors[] = { new Color(0, 0, 0), new Color(204, 102, 102),
-				new Color(102, 204, 102), new Color(102, 102, 204),
-				new Color(204, 204, 102), new Color(204, 102, 204),
-				new Color(102, 204, 204), new Color(218, 170, 0) };
+		Color colors[] = { new Color(0, 0, 0), new Color(5, 221, 245),
+				new Color(5, 200, 245), new Color(5, 180, 245),
+				new Color(5, 160, 245), new Color(5, 140, 245),
+				new Color(5, 120, 250), new Color(5, 100, 255) };
 		Color color = colors[identifier];
 
 		// Creates the actual block
 		g.setColor(color);
-		g.fillRect(x + 1, y + 1, squareWidth - 2, squareHeight - 2);
+		g.fillRect(x, y, squareWidth, squareHeight);
 
-		// Creates the brighter lines for 3D effect
-		g.setColor(color.brighter());
-		g.drawLine(x, y + squareHeight - 1, x, y);
-		g.drawLine(x, y, x + squareWidth - 1, y);
-
-		// Creates the darker lines for 3D effect
-		g.setColor(color.darker());
-		g.drawLine(x + 1, y + squareHeight - 1, x + squareWidth - 1, y
-				+ squareHeight - 1);
-		g.drawLine(x + squareWidth - 1, y + squareHeight - 1, x + squareWidth
-				- 1, y + 1);
-		g.setColor(Color.white);
-		g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
+		/*
+		 * // Creates the brighter lines for 3D effect
+		 * g.setColor(color.brighter()); g.drawLine(x, y + squareHeight - 1, x,
+		 * y); g.drawLine(x, y, x + squareWidth - 1, y);
+		 * 
+		 * // Creates the darker lines for 3D effect g.setColor(color.darker());
+		 * g.drawLine(x + 1, y + squareHeight - 1, x + squareWidth - 1, y +
+		 * squareHeight - 1); g.drawLine(x + squareWidth - 1, y + squareHeight -
+		 * 1, x + squareWidth - 1, y + 1);
+		 */
+		// g.setColor(Color.white);
+		// g.drawString(i + "", x + squareHeight / 2, y + squareWidth / 2);
 	}
 
 	public void fillWithEmpty() {

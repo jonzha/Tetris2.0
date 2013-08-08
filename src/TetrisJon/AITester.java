@@ -12,19 +12,24 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 public class AITester extends JFrame implements ActionListener {
-	double[] scores = new double[20];
-	AIGenetics[] population = new AIGenetics[20];
-	Chromo[] currentGen = new Chromo[20];
-	static Chromo[] nextGen = new Chromo[20];
-	Chromo[] parents = new Chromo[2];
+	// ***GUI***//
+	boolean marathon = true;
 	double mutationChance = 0.05;
 	double crossChance = 0.80;
+	// ***GUI***//
+
 	// ---Values for genes---//
 	double rangeMin = -100;
 	double rangeMax = 100;
 	double badRangeMax = 10;
 	double goodRangeMin = -10;
 	// ---End Values---//
+
+	double[] scores = new double[20];
+	AIGenetics[] population = new AIGenetics[20];
+	Chromo[] currentGen = new Chromo[20];
+	static Chromo[] nextGen = new Chromo[20];
+	Chromo[] parents = new Chromo[2];
 	int sumScores;
 	int highscore = 0;
 	Chromo highscoreStats, currentBestStats;
@@ -34,11 +39,10 @@ public class AITester extends JFrame implements ActionListener {
 	int[] testPieces = new int[1000000];
 	int generations;
 	JPanel info;
-	boolean pause = false;
+	boolean pause = false; // TODO pause
 	boolean firstRun = true;
 	JButton addChromo;
 	static int insertedValue = -1; // -1 meaning no inserted value
-	boolean marathon = true;
 
 	public AITester() {
 
@@ -442,5 +446,4 @@ public class AITester extends JFrame implements ActionListener {
 			GUIContainer.getInstance();
 		}
 	}
-
 }
